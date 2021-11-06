@@ -29,22 +29,29 @@ struct Light
 };
 
 
-DirectionalShadowData GetDirectionalShadowData(int lightIndex)
+// 获取平行光阴影数据
+DirectionalShadowData GetDirectionalShadowData(int lightIndex,ShadowData shadowData)
 {
     DirectionalShadowData data;
-    data.strength = _DirectionalLightShadowData[lightIndex].x;
-    data.tileIndex = _DirectionalLightShadowData[lightIndex].y;
+    //  乘以 shadowData.strength 可以剔除掉最后一个级联范围外的所有阴影。。。。
+    //data.strength = _DirectionalLightShadowData[lightIndex].x * shadowData.strength;
+    data.strength = _DirectionalLightShadowData[lightIndex].x ;
+    data.tileIndex = _DirectionalLightShadowData[lightIndex].y + shadowData.cascadeIndex;
+    data.normalBias = _DirectionalLightShadowData[lightIndex].z;
+    data.shadowMaskChannel = _DirectionalLightShadowData[lightIndex].w;
     return data;
 }
 
 
-Light GetDirectionalLight(int index,Surface surfaceWS)
+Light GetDirectionalLight(int index,Surface surfaceWS,ShadowData shadowData)
 {
     Light light;
     light.color = _DirectionalLightColors[index].rgb;
     light.direction = _DirectionalLightDirections[index].xyz;
-    DirectionalShadowData shadowData = GetDirectionalShadowData(index);
-    light.attenuation = GetDirectionalShadowAttenuation(shadowData,surfaceWS);
+    // 得到阴影数据
+    DirectionalShadowData dirShadowData = GetDirectionalShadowData(index,shadowData);
+    // 得到阴影衰减
+    light.attenuation = GetDirectionalShadowAttenuation(dirShadowData,shadowData,surfaceWS);
     return light;
 }
 #endif

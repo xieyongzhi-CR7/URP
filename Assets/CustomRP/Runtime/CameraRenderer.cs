@@ -76,6 +76,8 @@ public partial class CameraRenderer
         {
             enableDynamicBatching = useDynamicBetching,
             enableInstancing =  useGPUInstancing,
+            perObjectData = PerObjectData.Lightmaps| PerObjectData.LightProbe| PerObjectData.LightProbeProxyVolume
+            | PerObjectData.ShadowMask | PerObjectData.OcclusionProbe | PerObjectData.OcclusionProbeProxyVolume
         };
         drawingSettings.SetShaderPassName(1,litShaderTagId);
         // 设置哪些类型的渲染队列可以被绘制

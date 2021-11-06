@@ -12,5 +12,9 @@ struct Surface
     float metallic;
     float smoothness;
     float3 viewDirection;
+    //表面深度
+    float depth;
+    //抖动属性（级联间的混合模式）
+    float dither;
 };
 #endif

@@ -1,7 +1,7 @@
 #ifndef CUSTOM_UNLIT_PASS_INCLUDE
 #define CUSTOM_UNLIT_PASS_INCLUDE
 
-#include "../ShaderLibrary/Common.hlsl"
+
 
 
 struct Attributes
@@ -20,48 +20,28 @@ struct Varyings
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
 
-
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-// 提供纹理缩放
-UNITY_DEFINE_INSTANCED_PROP(float4,_BaseMap_ST)
-UNITY_DEFINE_INSTANCED_PROP(float4,_BaseColor)
-UNITY_DEFINE_INSTANCED_PROP(float,_Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 Varyings UnlitPassVertex(Attributes input)
 {
     Varyings output;   
     // 提取渲染对象的索引，并且存储到其它实例宏 所依赖的全局静态变量中
-    UNITY_SETUP_INSTANCE_ID(input);
-    
+    UNITY_SETUP_INSTANCE_ID(input);    
     // 将索引 转换存储，在片元中还要适用
     UNITY_TRANSFER_INSTANCE_ID(input,output);
     float3 positionWS = TransformObjectToWorld(input.positionOS);
     output.positionCS = TransformWorldToHClip(positionWS);
-    float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseMap_ST);
-    output.baseUV = input.baseUV * baseST.xy + baseST.zw;
+    output.baseUV = TransformBaseUV(input.baseUV);
     return output;
 }
-
-//CBUFFER_START(UnityPerMaterial) 
-    //float4 _BaseColor;
-//CBUFFER_END
-
-
-
 
 
 float4 UnlitPassFragment(Varyings input): SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
-    float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseColor);
-    float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.baseUV);
-    float4 base = baseColor * baseMap;    
+    float4 base = GetBase(input.baseUV);    
  #if defined(_CLIPPING)
-    clip(base.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Cutoff));
+    clip(base.a - GetCutoff(input.baseUV));
  #endif
     return base;
 }

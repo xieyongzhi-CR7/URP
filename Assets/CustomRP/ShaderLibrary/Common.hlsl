@@ -11,6 +11,9 @@
 
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Common.hlsl"
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/CommonMaterial.hlsl"
+#if defined(_SHADOW_MASK_DISTANCE) || defined(_SHAODW_MASK_ALWAYS)
+    #define SHADOW_SHADOWMASK
+#endif
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/UnityInstancing.hlsl"
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/SpaceTransforms.hlsl"
 
@@ -26,9 +29,15 @@
 //}
 
 
-float Square(float v)
+float Square1(float v)
 {
     return v * v;
+}
+
+// 计算两点间距离的平方
+float DistanceSquared(float3 pA, float3 pB)
+{
+    return dot(pA-pB,pA - pB);
 }
 
 #endif

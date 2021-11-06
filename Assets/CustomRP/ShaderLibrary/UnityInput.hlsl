@@ -3,14 +3,41 @@
 #define CUSTOM_UNITY_INPUT_INCLUDE
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Common.hlsl"
 
-CBUFFER_START(UnityPerDraw)
-//定义一个从模型空间 转换到 世界空间的转换矩阵
-float4x4 unity_ObjectToWorld;
 
-float4x4 unity_WorldToObject;
-real4 unity_WorldTransformParams;
-float4 unity_LODFade;
-float3 _WorldSpaceCameraPos;
+
+// 所有unityPerDraw 的属性，都可以在GPU Instancing中使用
+CBUFFER_START(UnityPerDraw)
+    //定义一个从模型空间 转换到 世界空间的转换矩阵
+    float4x4 unity_ObjectToWorld;
+    
+    float4x4 unity_WorldToObject;
+    real4 unity_WorldTransformParams;
+    
+    
+    
+    
+    
+    float4 unity_LODFade;
+    float4 _WorldSpaceCameraPos;
+    
+    float4 unity_ProbesOcclusion;
+    float4 unity_LightmapST;
+    float4 unity_DynamicLightmapST;
+
+//  lightProber参数（球谐参数）
+    float4 unity_SHAr;
+    float4 unity_SHAg;
+    float4 unity_SHAb;
+    float4 unity_SHBr;
+    float4 unity_SHBg;
+    float4 unity_SHBb;
+    float4 unity_SHC;
+    
+//  LightProbeVolume
+    float4 unity_ProbeVolumeParams;
+    float4x4 unity_ProbeVolumeWorldToObject;
+    float4 unity_ProbeVolumeSizeInv;
+    float4 unity_ProbeVolumeMin;    
 CBUFFER_END
 
 

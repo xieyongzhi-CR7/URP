@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SocialPlatforms;
 using Random = UnityEngine.Random;
 
@@ -10,7 +11,7 @@ public class MeshBall : MonoBehaviour
     private static int baseColorId = Shader.PropertyToID("_BaseColor");
     private static int metallicId = Shader.PropertyToID("_Metallic");
     private static int smoothnessId = Shader.PropertyToID("_Smoothness");
-    
+    private static int emissionColorId = Shader.PropertyToID("_EmissionColor");
     [SerializeField]
     private Mesh mesh = default;
 
@@ -47,10 +48,28 @@ public class MeshBall : MonoBehaviour
         {
             block = new MaterialPropertyBlock();
             block.SetVectorArray(baseColorId,baseColors);
-            block.SetVectorArray(baseColorId,baseColors);
+            block.SetVectorArray(emissionColorId,baseColors);
             block.SetFloatArray(smoothnessId,smoothness);
             block.SetFloatArray(metallicId,metallic);
+            
+            var positions = new Vector3[1023];
+            for (int i = 0; i < matrices.Length; i++)
+            {
+                positions[i] = matrices[i].GetColumn(3);
+            }
+            //如果环境中不存在烘焙的 LightProbe, unity 会使用ambient Probe 写进lightProbeArray中，用（1，1，1，1）写入occlusionProbesArray    存在和烘焙了光照探针， 
+            //如果场景中存在烘焙的光照探针数据  ， 则使用烘焙的探针进行计算 
+            
+            
+            //  使用DrawMeshInstanced接口，lightProbe是可以使用的， 阴影是不能用烘焙的，
+            var lightProbes = new SphericalHarmonicsL2[1023];
+            var occlusionProbes = new Vector4[1023];
+             LightProbes.CalculateInterpolatedLightAndOcclusionProbes(positions,lightProbes,occlusionProbes);
+            block.CopySHCoefficientArraysFrom(lightProbes);
+            block.CopyProbeOcclusionArrayFrom(occlusionProbes);
         }
-        Graphics.DrawMeshInstanced(mesh,0,material,matrices,1023,block);
+        
+        Graphics.DrawMeshInstanced(mesh,0,material,matrices,1023,block,ShadowCastingMode.On,true,0,null,LightProbeUsage.CustomProvided);
+        //Graphics.DrawMeshInstanced(mesh,0,material,matrices,1023,block);
     }
 }
