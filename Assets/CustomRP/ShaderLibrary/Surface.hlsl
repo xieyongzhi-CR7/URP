@@ -16,5 +16,7 @@ struct Surface
     float depth;
     //抖动属性（级联间的混合模式）
     float dither;
+    // 菲涅尔强度
+    float fresnelStrength;
 };
 #endif

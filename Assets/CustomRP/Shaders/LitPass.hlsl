@@ -5,10 +5,10 @@
 
 #include "../ShaderLibrary/Surface.hlsl"
 #include "../ShaderLibrary/Shadows.hlsl"
-#include "../ShaderLibrary/GI.hlsl"
-#include "../ShaderLibrary/Lighting.hlsl"
 #include "../ShaderLibrary/Light.hlsl"
 #include "../ShaderLibrary/BRDF.hlsl"
+#include "../ShaderLibrary/GI.hlsl"
+#include "../ShaderLibrary/Lighting.hlsl"
 
 struct Attributes
 {
@@ -59,12 +59,30 @@ Varyings LitPassVertex(Attributes input)
 //CBUFFER_END
 
 
+void ClipLOD(float4 positionCS,float fade)
+{
+    #if defined(LOD_FADE_CROSSFADE)
+        // 从y方向 垂直渐变开始。每32像素重复一次，那么就会产生交替的水平条纹
+        //float dither = (positionCS.y % 32) / 32;
+        
+        float dither = InterleavedGradientNoise(positionCS.xy,0);
+        clip(fade + (fade>0 ? -dither : dither));
+    #endif  
+
+}
 
 
 
 float4 LitPassFragment(Varyings input): SV_Target
 {
     UNITY_SETUP_INSTANCE_ID(input);
+    //  unity_LODFade.x  的值 是随着视距的变化而变化的
+    // 对于前一LOD 的物体  fade>0
+    // 对于后一lod的物体   fade < 0
+    #if defined(LOD_FADE_CROSSFADE)
+    //    return unity_LODFade.x;
+    #endif
+    ClipLOD(input.positionCS,unity_LODFade.x);
     //float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseColor);
     //float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.baseUV);
     float4 base = GetBase(input.baseUV);    
@@ -77,6 +95,7 @@ float4 LitPassFragment(Varyings input): SV_Target
     surface.color = base.rgb;
     surface.alpha = base.a;
     surface.metallic = GetMetallic(input.baseUV);
+    surface.fresnelStrength = GetFresnel(input.baseUV);
     surface.smoothness = GetSmoothness(input.baseUV);
     surface.viewDirection = normalize( _WorldSpaceCameraPos - input.positionWS);
     //获取表面深度
@@ -89,7 +108,7 @@ float4 LitPassFragment(Varyings input): SV_Target
  #else
     BRDF brdf = GetBRDF(surface);
  #endif
-    GI gi = GetGI(GI_FRAGMENT_DATA(input),surface);
+    GI gi = GetGI(GI_FRAGMENT_DATA(input),surface,brdf);
     float3 color = GetLighting(surface,brdf,gi);
     // 加上自发光
     color += GetEmission(input.baseUV);

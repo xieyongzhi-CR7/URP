@@ -20,7 +20,9 @@ float3 GetLighting(Surface surfaceWS,BRDF brdf,GI gi)
     ShadowData shadowData = GetShadowData(surfaceWS);
     shadowData.shadowMask = gi.shadowMask;
     //return  gi.diffuse;//shadowData.shadowMask.shadows.rgb;
-    float3 color = gi.diffuse * brdf.diffuse;
+    //float3 color = gi.diffuse * brdf.diffuse;
+    float3 color = InDirectBRDF(surfaceWS, brdf,gi.diffuse,gi.specular);
+
     //float3 color = 0.0;//gi.diffuse * brdf.diffuse;
     //float3 color = gi.diffuse;
      

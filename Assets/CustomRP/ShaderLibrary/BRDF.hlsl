@@ -7,6 +7,10 @@ struct BRDF
     float3 diffuse;
     float3 specular;
     float3 roughness;
+    // 真实的粗糙程度 （主要是后面在计算确定 间接光的spec采样CubeMap的mipLev）
+    float perceptualRoughness;
+    // 菲涅尔反射的颜色
+    float fresnel;
 };
 
 // 非导体的 最小反射率
@@ -33,7 +37,10 @@ BRDF GetBRDF(Surface surface, bool applyAlphaToDiffuse = false)
     // 非金属的镜面反射应该是白色的，最后威名通过金属度在最小反射率和表面颜色之间进行插值得到brdf的镜面反射颜色
     brdf.specular = lerp(MIN_REFLECTIVITY,surface.color,surface.metallic);
     float perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surface.smoothness);
+    brdf.perceptualRoughness = perceptualRoughness; 
     brdf.roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+    // 菲涅尔反射的颜色
+    brdf.fresnel = saturate(surface.smoothness + 1.0 - oneMinusRef);
     return brdf;
 }
 
@@ -53,6 +60,16 @@ float SpecularStrength(Surface surface, BRDF brdf, Light light)
 float3 DirectBRDF(Surface surface,BRDF brdf,Light light)
 {
     return SpecularStrength(surface,brdf,light) * brdf.specular + brdf.diffuse;
+}
+
+float3 InDirectBRDF(Surface surface,BRDF brdf,float3 GIDiffuse,float3 GISpecular)
+{
+    
+    float fresnelStrength = surface.fresnelStrength * Pow4(1.0 - saturate(dot(surface.normal,surface.viewDirection)));
+    //间接光的镜面反射 ：  GI 的 specular  *   brdf.specular       
+    float3 reflection = GISpecular * lerp(brdf.specular,brdf.fresnel,fresnelStrength);
+    // 间接光的漫反射 ：  GI 的 diffuse  *  brdf.diffuse
+    return GIDiffuse * brdf.diffuse +  reflection;
 }
 
 

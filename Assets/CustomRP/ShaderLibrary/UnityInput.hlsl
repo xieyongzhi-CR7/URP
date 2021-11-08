@@ -16,11 +16,13 @@ CBUFFER_START(UnityPerDraw)
     
     
     
-    
+    // x 分量存储的是过渡因子
+    // y 分量存储的是相同的过渡因子 只不过它被量化为16步
     float4 unity_LODFade;
     float4 _WorldSpaceCameraPos;
     
     float4 unity_ProbesOcclusion;
+    float4 unity_SpecCube0_HDR;
     float4 unity_LightmapST;
     float4 unity_DynamicLightmapST;
 
@@ -33,7 +35,7 @@ CBUFFER_START(UnityPerDraw)
     float4 unity_SHBb;
     float4 unity_SHC;
     
-//  LightProbeVolume
+//  LightProbeVolume (lppvs)
     float4 unity_ProbeVolumeParams;
     float4x4 unity_ProbeVolumeWorldToObject;
     float4 unity_ProbeVolumeSizeInv;

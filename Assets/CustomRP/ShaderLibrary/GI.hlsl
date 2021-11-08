@@ -4,7 +4,7 @@
 
 
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/EntityLighting.hlsl"
-
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/ImageBasedLighting.hlsl"
 
 
 
@@ -32,11 +32,18 @@ SAMPLER(samplerunity_ShadowMask);
 TEXTURE3D_FLOAT(unity_ProbeVolumeSH);
 SAMPLER(samplerunity_ProbeVolumeSH);
 
-// GI 只提供diffuse(即简介光漫反射);  包含lightProbe（动态）和lightMap（静态）提供;  
+
+TEXTURECUBE(unity_SpecCube0);
+SAMPLER(samplerunity_SpecCube0);
+
+
+// GI 提供diffuse(即简介光漫反射);  包含lightProbe（动态）和lightMap（静态）提供;   
+ // shadowMask提供的是衰减  :  shadowMask图 或者是 probeOcclusion 提供
+ // GI 提供specular: 源自 cubeMap
 struct GI 
 {
     float3 diffuse;
-    
+    float3 specular;    
     ShadowMask shadowMask;
 };
 
@@ -111,12 +118,32 @@ float4 SampleBackedShadows(float2 lightMapUV,Surface surfaceWS)
 
 
 
-GI GetGI(float2 lightMapUV,Surface surfaceWS)
+
+
+
+
+float3 SampleEnvironment(Surface surfaceWS, BRDF brdf)
+{
+    // 反射光的方向
+    float3 uvw = reflect(- surfaceWS.viewDirection,surfaceWS.normal);
+    //  
+    float mipMapLev = 1.0f;//PerceptualRoughnessToMipmapLevel(brdf.perceptualRoughness);
+    float4 environment = SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0,samplerunity_SpecCube0,uvw,mipMapLev);
+    float3 envColor = DecodeHDREnvironment(environment,unity_SpecCube0_HDR);
+    return envColor;
+}
+
+
+
+
+
+GI GetGI(float2 lightMapUV,Surface surfaceWS,BRDF brdf)
 {
     GI gi;
     //gi.diffuse = SampleLightMap(lightMapUV);
     //gi.diffuse = SampleLightProbe(surfaceWS);
     gi.diffuse = SampleLightMap(lightMapUV) + SampleLightProbe(surfaceWS);
+    gi.specular = SampleEnvironment(surfaceWS,brdf);
     gi.shadowMask.always = false;
     gi.shadowMask.distance = false;
     gi.shadowMask.shadows = 1.0;
