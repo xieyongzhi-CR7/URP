@@ -4,17 +4,31 @@ Shader "CustomRP/Lit"
     {
         [HideInInspector] _MainTex("Texture for Lightmap",2D) = "white"{}
         [HideInInspector] _Color ("Color for Lightmap",Color) = (0.5,0.5,0.5,0.5)
+        [Toggle(_MASK_MAP)]_MaskMapToggle("MaskMap",Float) = 0
+        
+        [NoScaleOffset]_MaskMap("Mask (mods)",2D) = "white"{}
         _Metallic("Metallic",Range(0,1)) = 0
+        _Occlusion("Occlusiong",Range(0,1)) = 1
         _Smoothness("_Smoothness",Range(0,1)) = 0.5
         _Fresnel("Fresnel",Range(0,1)) = 1
         _BaseMap("BaseMap",2D) = "white"{}
         _BaseColor("Color",Color) = (0.5,0.5,0.5,1.0)
         _Cutoff("Alpha Cutoff",Range(0.0,1.0)) = 0.5
         
+        // 因为法线 很昂贵，在不用的时候  不启用
+        [Toggle(_NORMAL_MAP)]_NormalMapToggle("Normal Map",Float) = 0
+        [NoScaleOffset]_NormalMap("Normal",2D) = "white"{}
+        _NormalScale("Normal scale",Range(0,1)) = 1
+        
+        
         [NoScaleOffset]_EmissionMap("Emission",2D) = "white"{}
         [HDR]_EmissionColor("EmissionColor",Color) = (0.0,0.0,0.0,0.0)
-        
-        
+        [Toggle(_DetailMap)]_DetailMapToggle("DetailMap",Float) = 0
+        _DetailMap("Details",2D) = "linearGrey"{}
+        _DetailAlbedo("Details Albedo",Range(0,1)) = 1
+        _DetailSmoothness("Detail Smoothness",Range(0,1)) = 1
+        _DetailNormal("_DetailNormal",2D) = "bump" {}
+        _DetailNormalScale("_DetailNormalScale",Range(0,1)) = 1        
         [Toggle(_CLIPPING)]_Clipping("Alpha Clipping",Float) = 0
         // 投影模式
         [KeywordEnum(on,Clip,Dither,Off)]_Shadows("Shadows",Float) = 0
@@ -54,6 +68,9 @@ Shader "CustomRP/Lit"
             // lod 的过渡
             #pragma multi_compile _ LOD_FADE_CROSSFADE
             
+            //
+            #pragma shader_feature _NORMAL_MAP;
+            #pragma shader_feature _MaskMapToggle;
             
             #pragma vertex LitPassVertex
             #pragma fragment LitPassFragment

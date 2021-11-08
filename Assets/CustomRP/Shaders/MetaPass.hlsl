@@ -42,12 +42,13 @@ Varings MetaPassVertex(Attributes input)
 
 float4 MetaPassFragment(Varings input):SV_TARGET
 {
-    float4 base = GetBase(input.baseUV);
+    InputConfig inputConfig = GetInputConfig(input.baseUV,0.0);
+    float4 base = GetBase(inputConfig);
     Surface surface;
     ZERO_INITIALIZE(Surface,surface);
     surface.color = base.rgb;
-    surface.metallic = GetMetallic(input.baseUV);
-    surface.smoothness = GetSmoothness(input.baseUV);
+    surface.metallic = GetMetallic(inputConfig);
+    surface.smoothness = GetSmoothness(inputConfig);
     BRDF brdf = GetBRDF(surface);
     float4 meta = 0.0;
     if(unity_MetaFragmentControl.x)
@@ -60,7 +61,7 @@ float4 MetaPassFragment(Varings input):SV_TARGET
     else if (unity_MetaFragmentControl.y)
     {
         // 决定烘焙自发光的效果
-        meta = float4(GetEmission(input.baseUV),1.0);
+        meta = float4(GetEmission(inputConfig),1.0);
     }
     return meta;
 }

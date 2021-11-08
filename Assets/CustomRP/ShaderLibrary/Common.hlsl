@@ -16,6 +16,7 @@
 #endif
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/UnityInstancing.hlsl"
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/SpaceTransforms.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Packing.hlsl"
 
 //float4 TransformObjectToWorld(float3 positionOS)
 //{
@@ -27,6 +28,24 @@
 //{
 //    return mul(unity_MatrixVP,float4(positionWS,1.0));
 //}
+
+
+float3 DecodeNormal(float4 sample,float scale)
+{
+    #if defined(UNITY_NO_DXT5nm)
+        return UnpackNormalRGB(sample,scale);
+    #else
+        return UnpackNormalmapRGorAG(sample,scale);
+    #endif
+}
+
+
+float3 NormalTangentToWorld(float3 normalTS,float3 normalWS,float4 tangentWS)
+{
+    float3x3 tangentToWorld = CreateTangentToWorld(normalWS,tangentWS.xyz,tangentWS.w);
+    return TransformTangentToWorld(normalTS,tangentToWorld);
+}
+
 
 
 float Square1(float v)

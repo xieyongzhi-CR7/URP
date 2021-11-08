@@ -7,9 +7,12 @@ struct Surface
     // 表面位置
     float3 position;
     float3 normal;
+    //
+    float3 interpolatednormal;
     float3 color;
     float alpha;
     float metallic;
+    float occlusion;
     float smoothness;
     float3 viewDirection;
     //表面深度

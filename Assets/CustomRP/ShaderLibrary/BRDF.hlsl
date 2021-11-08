@@ -62,6 +62,7 @@ float3 DirectBRDF(Surface surface,BRDF brdf,Light light)
     return SpecularStrength(surface,brdf,light) * brdf.specular + brdf.diffuse;
 }
 
+// 间接光提供的颜色
 float3 InDirectBRDF(Surface surface,BRDF brdf,float3 GIDiffuse,float3 GISpecular)
 {
     
@@ -69,7 +70,7 @@ float3 InDirectBRDF(Surface surface,BRDF brdf,float3 GIDiffuse,float3 GISpecular
     //间接光的镜面反射 ：  GI 的 specular  *   brdf.specular       
     float3 reflection = GISpecular * lerp(brdf.specular,brdf.fresnel,fresnelStrength);
     // 间接光的漫反射 ：  GI 的 diffuse  *  brdf.diffuse
-    return GIDiffuse * brdf.diffuse +  reflection;
+    return (GIDiffuse * brdf.diffuse +  reflection) * surface.occlusion;
 }
 
 

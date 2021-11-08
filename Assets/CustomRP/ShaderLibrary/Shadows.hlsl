@@ -155,9 +155,9 @@ float FilterDirectionalShadow(float3 positionSTS)
 {
     #if defined(DIRECTIONAL_FILTER_SETUP)
         // 样本权重
-        real weights[DIRECTIONAL_FILTER_SAMPLES];
+        float weights[DIRECTIONAL_FILTER_SAMPLES];
         //样本位置
-        real2 positions[DIRECTIONAL_FILTER_SAMPLES];
+        float2 positions[DIRECTIONAL_FILTER_SAMPLES];
             
         float4 size = _ShadowAtlasSize.yyxx;
         DIRECTIONAL_FILTER_SETUP(size,positionSTS.xy,weights,positions);
@@ -177,14 +177,15 @@ float FilterDirectionalShadow(float3 positionSTS)
 // 因为 shadowMask 只有4个通道  所以  只支持4盏灯
 float GetBakedShadow(ShadowMask mask,int channel)
 {
+    float shadow = 1.0; 
     if(mask.distance || mask.always)
     {
         if(channel >=0)
         {
-            return mask.shadows[channel];
+            shadow = mask.shadows[channel];
         }   
     }
-    return 1.0;
+    return shadow;
 }
 
 
@@ -226,7 +227,7 @@ float MixBakedAndRealtimeShadows(ShadowData global, float shadow,int shadowMaskC
 float GetCascadeShadow(DirectionalShadowData directional, ShadowData global,Surface surfaceWS)
 {
    // 计算法线偏差      世界法线          * 光源中的light.normalBias  * 像素偏移值大小
-    float3 normalBias = surfaceWS.normal *(directional.normalBias * _CascadeData[global.cascadeIndex].y);
+    float3 normalBias = surfaceWS.interpolatednormal * (directional.normalBias * _CascadeData[global.cascadeIndex].y);
     // 通过阴影转换矩阵和表面位置 得到在阴影纹理（图块）空间的位置，然后对图集进行采样
     // 此位置是在法线方向上偏移后的新值
     float3 positionSTS = mul(_DirectionalShadowMatrices[directional.tileIndex],float4(surfaceWS.position + normalBias,1.0)).xyz;
@@ -234,7 +235,7 @@ float GetCascadeShadow(DirectionalShadowData directional, ShadowData global,Surf
     // 如果级联混合小于1 代表在级联层级过渡区域中，必须从下一级联中采样并在两个值之间进行插值
     if(global.cascadeBlend < 1.0)
     {
-        normalBias = surfaceWS.normal * ( directional.normalBias * _CascadeData[global.cascadeIndex + 1].y);
+        normalBias = surfaceWS.interpolatednormal * ( directional.normalBias * _CascadeData[global.cascadeIndex + 1].y);
         positionSTS = mul(_DirectionalShadowMatrices[directional.tileIndex+1],float4(surfaceWS.position + normalBias,1.0)).xyz;
         shadow = lerp(FilterDirectionalShadow(positionSTS),shadow,global.cascadeBlend);
     }
@@ -251,16 +252,20 @@ float GetDirectionalShadowAttenuation(DirectionalShadowData directional, ShadowD
 #if !defined(_RECEIVE_SHADOWS)
     return 1.0;
 #endif
+    float shadow;
     //  global.strength : 超出级联范围 strength = 0
     if( directional.strength * global.strength <= 0.0)
     {
-        return GetBakedShadow(global.shadowMask,directional.shadowMaskChannel,abs(directional.strength));
+        shadow = GetBakedShadow(global.shadowMask,directional.shadowMaskChannel,abs(directional.strength));
     }
-    // 实时阴影
-    float shadow = GetCascadeShadow(directional,global,surfaceWS);
- 
+    else
+    {
+        // 实时阴影
+        shadow = GetCascadeShadow(directional,global,surfaceWS);
         // 最终的阴影衰减值是阴影强度和衰减因子的插值
-    return MixBakedAndRealtimeShadows(global,shadow,directional.shadowMaskChannel,directional.strength);
+        shadow = MixBakedAndRealtimeShadows(global,shadow,directional.shadowMaskChannel,directional.strength);
+    }
+    return shadow;
 }
 
 
