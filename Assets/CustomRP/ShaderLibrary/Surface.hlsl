@@ -4,7 +4,7 @@
 
 struct Surface
 {
-    // 表面位置
+    // 表面位置(worldPos)
     float3 position;
     float3 normal;
     //

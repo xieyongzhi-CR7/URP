@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class CustomRenderPipeLine : RenderPipeline
+public partial class CustomRenderPipeLine : RenderPipeline
 {
     CameraRenderer renderer = new CameraRenderer();
     private bool useDynamicBatching, useGPUInstancing;
@@ -17,6 +17,8 @@ public class CustomRenderPipeLine : RenderPipeline
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
         // 灯光适用线性强度
         GraphicsSettings.lightsUseLinearIntensity = true;
+
+        InitializeForEditor();
     }
     
     protected override void Render(ScriptableRenderContext context, Camera[] cameras)

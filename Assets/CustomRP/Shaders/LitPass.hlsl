@@ -107,7 +107,7 @@ float4 LitPassFragment(Varyings input): SV_Target
     //float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.baseUV);
     float4 base = GetBase(inputConfig);    
  #if defined(_CLIPPING)
-    clip(base.a - GetCutoff(input.baseUV));
+    clip(base.a - GetCutoff(inputConfig));
  #endif
     Surface surface;
     surface.position = input.positionWS;
