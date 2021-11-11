@@ -61,4 +61,15 @@ public class ShadowSettings
 
     
 
+    [System.Serializable]
+    public struct Other
+    {
+        public TextureSize atlasSize;
+        public FilterMode filterMode;
+    }
+    public Other other = new Other()
+    {
+        atlasSize = TextureSize._1024,
+        filterMode = FilterMode.PCF5x5,
+    };
 }

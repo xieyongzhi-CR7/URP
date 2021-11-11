@@ -83,20 +83,20 @@ public class Lighting
                     if (dirLightCount < maxDirLightCount)
                     {
                         // VisibleLight 结构很大，这里使用引用传递 而不是值传递，这样不会生成副本
-                        SetupDirectionLight(dirLightCount++,ref visibleLight);
+                        SetupDirectionLight(dirLightCount++,i,ref visibleLight);
                     }
                     break;
                 case LightType.Point:
                     if (otherLightCount <maxOtherLightCount)
                     {
-                        SetupPointLight(otherLightCount++,ref visibleLight);
+                        SetupPointLight(otherLightCount++,i,ref visibleLight);
                     }
                     break;
                 case LightType.Spot:
                     if (otherLightCount < maxOtherLightCount)
                     {
                         //Debug.LogError("spot otherLightCount="+otherLightCount);
-                        SetupSpotLight(otherLightCount++,ref visibleLight);
+                        SetupSpotLight(otherLightCount++,i,ref visibleLight);
                     }
                     break;
             }
@@ -121,19 +121,19 @@ public class Lighting
         }
         
     }
-    void SetupDirectionLight(int index,ref VisibleLight visibleLight)
+    void SetupDirectionLight(int index,int visiableIndex,ref VisibleLight visibleLight)
     {
         direLightColors[index] = visibleLight.finalColor;
         direLightDirections[index] = -visibleLight.localToWorldMatrix.GetColumn(2);
         // buffer.SetGlobalVector(dirLightColorId,light.color.linear * light.intensity);
         // buffer.SetGlobalVector(dirLightDirectionId, - light.transform.forward);
         //shadows.ReserveDirectionalShadows(visibleLight.light,index);
-        dirLightShadowData[index] = shadows.ReserveDirectionalShadows(visibleLight.light, index);
+        dirLightShadowData[index] = shadows.ReserveDirectionalShadows(visibleLight.light,visiableIndex);
     }
 
     
     // 点光源的处理
-    void SetupPointLight(int index,ref VisibleLight visibleLight)
+    void SetupPointLight(int index,int visiableIndex,ref VisibleLight visibleLight)
     {
         otherLightColors[index] = visibleLight.finalColor;
         Vector4 position = visibleLight.localToWorldMatrix.GetColumn(3);
@@ -142,10 +142,10 @@ public class Lighting
         // 为了确保点光源不受聚光灯角度衰减的影响， 设置点光源数据时 将聚光灯角度设置为 0 和 1
         otherLightSpotAngles[index] = new Vector4(0f,1f);
         
-        otherLightShadowData[index] = shadows.ReserveOtherShadows(visibleLight.light, index);
+        otherLightShadowData[index] = shadows.ReserveOtherShadows(visibleLight.light, visiableIndex);
     }
 
-    void SetupSpotLight(int index,ref VisibleLight visibleLight)
+    void SetupSpotLight(int index,int visiableIndex,ref VisibleLight visibleLight)
     {
         otherLightColors[index] = visibleLight.finalColor;
         Vector4 position = visibleLight.localToWorldMatrix.GetColumn(3);
@@ -160,7 +160,7 @@ public class Lighting
         float angleRangeInv = 1f / Mathf.Max(innerCos - outerCos, 0.001f);
         otherLightSpotAngles[index] = new Vector4(angleRangeInv,-outerCos * angleRangeInv);
 
-        otherLightShadowData[index] = shadows.ReserveOtherShadows(light, index);
+        otherLightShadowData[index] = shadows.ReserveOtherShadows(light, visiableIndex);
     }
     
     public void Cleanup()

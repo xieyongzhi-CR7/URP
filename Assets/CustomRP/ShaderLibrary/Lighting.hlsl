@@ -17,6 +17,8 @@ float3 GetLighting(Surface surface,BRDF brdf,Light light)
 
 float3 GetLighting(Surface surfaceWS,BRDF brdf,GI gi)
 {
+    // shadowData.strength  :  这个强度是  根据 positionWS  在  阴影最大距离 中的比例  算出的 宏观的阴影的强度 ，(不是从shadowMask 中采样出的结果，这是第一步 阴影插值的开始)
+    // 
     ShadowData shadowData = GetShadowData(surfaceWS);
     shadowData.shadowMask = gi.shadowMask;
     //return  gi.diffuse;//shadowData.shadowMask.shadows.rgb;

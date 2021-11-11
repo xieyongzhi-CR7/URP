@@ -39,7 +39,7 @@ struct Varyings
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
-
+bool _ShadowPancaking;
 
 Varyings ShadowCasterPassVertex(Attributes input)
 {
@@ -55,13 +55,18 @@ Varyings ShadowCasterPassVertex(Attributes input)
     
     // UNITY_NEAR_CLIP_VALUE:  定义为近裁剪面的值。Direct3D 类平台使用 0.0，而 OpenGL 类平台使用 –1.0。
     // UNITY_REVERSED_Z : 在使用反转 Z 缓冲区的平台上定义。存储的 Z 值的范围是 1 到 0，而不是 0 到 1。
-//#if UNITY_REVERSED_Z
-//    output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-//#else
-//    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
-//#endif    
+if(_ShadowPancaking)
+{
+#if UNITY_REVERSED_Z
+    output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#else
+    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#endif    
+}
+
     float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseMap_ST);
     output.baseUV = input.baseUV * baseST.xy + baseST.zw;
+    
     return output;
 }
 
