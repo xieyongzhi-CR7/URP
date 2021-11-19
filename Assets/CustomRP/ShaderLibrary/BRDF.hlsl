@@ -13,7 +13,7 @@ struct BRDF
     float fresnel;
 };
 
-// 非导体的 最小反射率
+// 非导体的 最小反射率 (在漫反射中  这个0.04可能微不足道，但是在spec中，作用巨大)
 #define MIN_REFLECTIVITY 0.04
 
 float oneMinusReflectivity(float metallic)
@@ -34,7 +34,7 @@ BRDF GetBRDF(Surface surface, bool applyAlphaToDiffuse = false)
     }
     //  根据能量守恒： 镜面反射应该等于 ： brdf.specular = Surface.color - brdf.diffuse;
     // 但是忽略了一个事实： 即金属影响镜面反射的颜色，而非金属不影响。。
-    // 非金属的镜面反射应该是白色的，最后威名通过金属度在最小反射率和表面颜色之间进行插值得到brdf的镜面反射颜色
+    // 非金属的镜面反射应该是白色的，最后我们通过金属度在最小反射率和表面颜色之间进行插值得到brdf的镜面反射颜色
     brdf.specular = lerp(MIN_REFLECTIVITY,surface.color,surface.metallic);
     float perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surface.smoothness);
     brdf.perceptualRoughness = perceptualRoughness; 

@@ -24,7 +24,10 @@ public partial class CameraRenderer
     /// </summary>
     private CullingResults cullingResults;
     Lighting lighting = new Lighting();
-    public void Render(ScriptableRenderContext context, Camera camera,bool useDynamicBatching,bool useGPUInstancing,ShadowSettings shadowSettings)
+    // 后处理相关
+    PostFXStack postFxStack = new PostFXStack();
+    private static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
+    public void Render(ScriptableRenderContext context, Camera camera,bool useDynamicBatching,bool useGPUInstancing,ShadowSettings shadowSettings,PostFXSettings postFxSettings)
     {
         this.camera = camera;
         this.context = context;
@@ -39,11 +42,18 @@ public partial class CameraRenderer
         buffer.BeginSample(SampleName);
         ExecuteCommandBuffer();
         lighting.Setup(context,cullingResults,shadowSettings);
+        postFxStack.Setup(context,camera,postFxSettings);
         buffer.EndSample(SampleName);
         Setup();
         
         DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);
-        lighting.Cleanup();
+        DrawGizmosBeforeFX();
+        if (postFxStack.IsActive)
+        {
+            postFxStack.Render(frameBufferId);    
+        }
+        DrawGizmosAfterFX();
+        Cleanup();
         Submit();
     }
     
@@ -95,7 +105,13 @@ public partial class CameraRenderer
         context.DrawRenderers(cullingResults,ref drawingSettings,ref filteringSettings);
         //  绘制半透明物体结束
         DrawUnsupportedShaders();
-        DrawGizmos();
+        
+        // DrawGizmosBeforeFX();
+        // if (postFxStack.IsActive)
+        // {
+        //     postFxStack.Render(frameBufferId);    
+        // }
+        // DrawGizmosAfterFX();
     }
 
     void Submit()
@@ -112,6 +128,16 @@ public partial class CameraRenderer
         // 在清楚前 设置相机属性，后面就能快速清除
         context.SetupCameraProperties(camera);
         CameraClearFlags flags = camera.clearFlags;
+        if (postFxStack.IsActive)
+        {
+            if (flags > CameraClearFlags.Color)
+            {
+                // 保证绘制在后处理中的 是最新的数据，而不能是上一帧的数据，（当 DepthOnly  或 dontCare 这两个不会清除颜色 ,这里强制覆盖清理上一帧的颜色）
+                flags = CameraClearFlags.Color;
+            }
+            buffer.GetTemporaryRT(frameBufferId,camera.pixelWidth,camera.pixelHeight,32,FilterMode.Bilinear,RenderTextureFormat.Default);
+            buffer.SetRenderTarget(frameBufferId,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
+        }
         buffer.ClearRenderTarget(flags<=CameraClearFlags.Depth,flags==CameraClearFlags.Color,flags==CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         // 为了保证下一帧绘制的图像正确，通常需要清除渲染目标，清除旧的数据
         //  参数 ：  清除深度，  清除颜色， 清除颜色数据的颜色
@@ -127,6 +153,14 @@ public partial class CameraRenderer
         buffer.Clear();
     }
 
+    void Cleanup()
+    {
+        lighting.Cleanup();
+        if (postFxStack.IsActive)
+        {
+            buffer.ReleaseTemporaryRT(frameBufferId);
+        }
+    }
 }
 
 

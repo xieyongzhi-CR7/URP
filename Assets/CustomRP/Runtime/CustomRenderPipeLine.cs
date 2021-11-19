@@ -9,9 +9,12 @@ public partial class CustomRenderPipeLine : RenderPipeline
     private bool useDynamicBatching, useGPUInstancing;
 
     private ShadowSettings shadowSettings = default;
-    public CustomRenderPipeLine(bool useDynamicBatching, bool useGPUInstancing,bool useSRPBatcher,ShadowSettings shadowSettings)
+    PostFXSettings postFxSettings = default;
+    public CustomRenderPipeLine(bool useDynamicBatching, bool useGPUInstancing,bool useSRPBatcher,ShadowSettings shadowSettings,PostFXSettings postFxSettings)
     {
+        
         this.shadowSettings = shadowSettings;
+        this.postFxSettings = postFxSettings;
         this.useDynamicBatching = useDynamicBatching;
         this.useGPUInstancing = useGPUInstancing;
         GraphicsSettings.useScriptableRenderPipelineBatching = useSRPBatcher;
@@ -25,7 +28,7 @@ public partial class CustomRenderPipeLine : RenderPipeline
     {
         for (int i = 0; i < cameras.Length; i++)
         {
-            renderer.Render(context,cameras[i],useDynamicBatching,useGPUInstancing,shadowSettings);
+            renderer.Render(context,cameras[i],useDynamicBatching,useGPUInstancing,shadowSettings,postFxSettings);
         }
     }
 }

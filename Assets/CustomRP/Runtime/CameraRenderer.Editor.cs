@@ -10,6 +10,8 @@ public partial class CameraRenderer
     partial void PrepareForSceneWindow();
     partial void DrawUnsupportedShaders();
     partial void DrawGizmos();
+    partial void DrawGizmosBeforeFX();
+    partial void DrawGizmosAfterFX();
    #if UNITY_EDITOR
     private static ShaderTagId[] legacyShaderTagIds = { new ShaderTagId("Always"),new ShaderTagId("ForwardBase"),  };
     private static Material errorMaterial;
@@ -36,6 +38,7 @@ public partial class CameraRenderer
     {
         if (Handles.ShouldRenderGizmos())
         {
+            
             context.DrawGizmos(camera,GizmoSubset.PreImageEffects);
             context.DrawGizmos(camera,GizmoSubset.PostImageEffects);
         }
@@ -51,6 +54,18 @@ public partial class CameraRenderer
         }
     }
 
+    
+    partial void DrawGizmosBeforeFX()
+    {
+        if (Handles.ShouldRenderGizmos())
+        {
+            context.DrawGizmos(camera,GizmoSubset.PreImageEffects);
+        }
+    }
+    partial void DrawGizmosAfterFX()
+    {
+        context.DrawGizmos(camera,GizmoSubset.PostImageEffects);
+    }
 
 #endif
     

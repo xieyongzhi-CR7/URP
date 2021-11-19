@@ -134,9 +134,13 @@ public class Shadows
             {
                 return new Vector4(-light.shadowStrength,0f,0f,maskChannel);
             }
-            ShadowedDirectionalLights[ShadowedDirectionalLightCount] = new ShadowedDirectionalLight { visiableLightIndex = visibleLightIndex, slopeScaleBias = light.shadowBias,nearPlaneOffset = light.shadowNearPlane};
+            ShadowedDirectionalLights[ShadowedDirectionalLightCount] = 
+                new ShadowedDirectionalLight { visiableLightIndex = visibleLightIndex, slopeScaleBias = light.shadowBias,nearPlaneOffset = light.shadowNearPlane};
             // 返回阴影强度和阴影图块的索引
-            return new Vector4(light.shadowStrength, settings.directional.cascadeCount * ShadowedDirectionalLightCount++,light.shadowNormalBias,maskChannel);
+            return new Vector4(light.shadowStrength,
+                settings.directional.cascadeCount 
+                * ShadowedDirectionalLightCount++,
+                light.shadowNormalBias,maskChannel);
         }
 
         return new Vector4(0f,0f,0f,1f);
@@ -173,6 +177,8 @@ public class Shadows
         atlasSizes.y = 1f / atlasSize;
         buffer.GetTemporaryRT(dirShadowAtlasId,atlasSize,atlasSize,32,FilterMode.Bilinear,RenderTextureFormat.Shadowmap);
         //指定渲染数据存储到渲染纹理 而不是帧缓冲区中
+        // RenderBufferLoadAction. DontCare : gpu的片上内容，不用加载到内存中
+        // RenderBufferStoreAction. Store : 将render内容存储到RAM中
         buffer.SetRenderTarget(dirShadowAtlasId,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
         //  因为只关心 深度缓冲，所以只需要清除深度
         buffer.ClearRenderTarget(true,false,Color.clear);
@@ -236,13 +242,14 @@ public class Shadows
             }
             // 当此值为1时： 如果大的级联中的投影数据能被小的级联数据覆盖，就可以从大的级联中剔除这些投影。
             splitData.shadowCascadeBlendCullingFactor = cullingFactor;
+            // splitData 中包含应该如何剔除对象的信息，我们把它复制到阴影设置中
             shadowSetting.splitData = splitData;
             // 调整图块索引，它等于光源的图块偏移加上级联的索引
             int tileIndex = tileOffset + i;
             Vector2 offset = SetTileViewPort(tileIndex, split, tileSize);
             // 投影矩阵乘以视图矩阵， 得到从世界空间转换到灯光空间的转换矩阵
             dirShadowMatrices[tileIndex] = ConvertToAtlasMatrix(projMatrix * viewMatrix, offset, tileSzale);
-            
+            // 应用VP 矩阵
             buffer.SetViewProjectionMatrices(viewMatrix, projMatrix);
             // 设置斜度比例偏差值
             buffer.SetGlobalDepthBias(0,light.slopeScaleBias);

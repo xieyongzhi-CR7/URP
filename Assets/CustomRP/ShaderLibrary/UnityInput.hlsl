@@ -40,6 +40,9 @@ CBUFFER_START(UnityPerDraw)
     float4x4 unity_ProbeVolumeWorldToObject;
     float4 unity_ProbeVolumeSizeInv;
     float4 unity_ProbeVolumeMin;    
+    
+    // 用于反转 y坐标
+    float4 _ProjectionParams;
 CBUFFER_END
 
 

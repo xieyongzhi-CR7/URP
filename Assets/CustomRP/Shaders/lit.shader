@@ -49,7 +49,8 @@ Shader "CustomRP/Lit"
         ENDHLSL
         Pass
         {
-            Tags{ "LightMode" = "CustomLit"}
+            // 第一步先设置  LightMode
+            Tags{"LightMode"="CustomLit"}
             Blend[_SrcBlend][_DstBlend]
             ZWrite[_ZWrite]
             HLSLPROGRAM
