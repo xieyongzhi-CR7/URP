@@ -36,7 +36,7 @@ Shader "Hidden/CustomRP/PostFXStack"
         
         Pass
         {
-            Name "Bloom Combine"        
+            Name "Bloom Add"        
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
@@ -54,7 +54,39 @@ Shader "Hidden/CustomRP/PostFXStack"
             ENDHLSL
         }
         
+        Pass
+        {
+            Name "Bloom Prefilter Firefiles"        
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment BloomPrefilterFirefilesPassFragment            
+            ENDHLSL
+        }
+        
+         Pass
+        {
+            Name "Bloom Scatter"        
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment BloomScatterPassFragment            
+            ENDHLSL
+        }
+        
             
+            
+         Pass
+        {
+            Name "Bloom Scatter Final"        
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment BloomScatterFinalFragment            
+            ENDHLSL
+        }
+        
+        
         Pass
         {
             Name "Copy"        

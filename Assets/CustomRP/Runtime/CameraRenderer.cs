@@ -27,7 +27,8 @@ public partial class CameraRenderer
     // 后处理相关
     PostFXStack postFxStack = new PostFXStack();
     private static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
-    public void Render(ScriptableRenderContext context, Camera camera,bool useDynamicBatching,bool useGPUInstancing,ShadowSettings shadowSettings,PostFXSettings postFxSettings)
+    private bool useHDR;
+    public void Render(ScriptableRenderContext context, Camera camera,bool useDynamicBatching,bool useGPUInstancing,ShadowSettings shadowSettings,PostFXSettings postFxSettings,bool allowHDR)
     {
         this.camera = camera;
         this.context = context;
@@ -39,10 +40,12 @@ public partial class CameraRenderer
         {
             return;
         }
+
+        useHDR = allowHDR && camera.allowHDR;
         buffer.BeginSample(SampleName);
         ExecuteCommandBuffer();
         lighting.Setup(context,cullingResults,shadowSettings);
-        postFxStack.Setup(context,camera,postFxSettings);
+        postFxStack.Setup(context,camera,postFxSettings,useHDR);
         buffer.EndSample(SampleName);
         Setup();
         
@@ -135,7 +138,7 @@ public partial class CameraRenderer
                 // 保证绘制在后处理中的 是最新的数据，而不能是上一帧的数据，（当 DepthOnly  或 dontCare 这两个不会清除颜色 ,这里强制覆盖清理上一帧的颜色）
                 flags = CameraClearFlags.Color;
             }
-            buffer.GetTemporaryRT(frameBufferId,camera.pixelWidth,camera.pixelHeight,32,FilterMode.Bilinear,RenderTextureFormat.Default);
+            buffer.GetTemporaryRT(frameBufferId,camera.pixelWidth,camera.pixelHeight,32,FilterMode.Bilinear,useHDR ? RenderTextureFormat.DefaultHDR :RenderTextureFormat.Default);
             buffer.SetRenderTarget(frameBufferId,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
         }
         buffer.ClearRenderTarget(flags<=CameraClearFlags.Depth,flags==CameraClearFlags.Color,flags==CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);

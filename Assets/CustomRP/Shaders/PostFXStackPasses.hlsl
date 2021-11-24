@@ -17,6 +17,15 @@ float4 GetSourceTexelSize()
     return _PostFXSource_TexelSize;
 }
 
+//luminance = 0.2125 * Red + 0.7154 * Green + 0.0721 * Blue
+//思路是从把从贴图采样到的颜色代入明亮度公式得到明亮度,  即 置灰
+//Luminance 是客观测量发光体的亮度，是个客观值
+
+float Luminance(float3 color)
+{
+    return dot(color,float3(0.2125,0.7154,0.0721));
+}
+
 
 
 float4 GetSource(float2 screenUV)
@@ -121,7 +130,7 @@ float4 BloomCombinePassFragment(Varyings input):SV_TARGET
     return float4(lowRes * _BloomIntensity + hightRes,1.0);
 }
 
-
+// 应用阈值， 
 float3 ApplyBloomThreshold(float3 color)
 {
     float brightness = Max3(color.r,color.g,color.b);
@@ -140,7 +149,60 @@ float4 BloomprefilterPassFragment(Varyings input):SV_TARGET
     return float4(color,1.0);
 }
 
+float4 BloomPrefilterFirefilesPassFragment(Varyings input) : SV_TARGET
+{
+    float3 color = 0.0;
+    float3 wightSum = 0.0;
+    float2 offsets[] = {float2(0.0,0.0),float2(-1.0,-1.0),float2(-1.0,1.0),float2(1.0,-1.0),float2(1.0,1.0)//,
+                                        //float2(-1.0,0.0),float2(1.0,0.0),float2(0.0,-1.0),float2(0.0,1.0)
+                        };
 
+    for(int i = 0; i < 5; i++)
+    {
+        float3 c = GetSource(input.screenUV + offsets[i] * GetSourceTexelSize().xy * 2.0).rgb;
+        c = ApplyBloomThreshold(c);
+        float w = 1.0 / (Luminance(c) + 1.0);
+        color += c * w;
+        wightSum += w;
+    }
+    color /= wightSum;
+    return float4(color,1.0);
+    
+}
+
+float4 BloomScatterPassFragment(Varyings input) : SV_TARGET
+{
+    float3 lowRes;
+    if (_BloomBicubicUpsampling)
+    {
+        lowRes = GetSourceBicubic(input.screenUV).rgb;
+    }
+    else    
+    {
+        lowRes = GetSource(input.screenUV).rgb;
+    }
+    float3 hightRes = GetSource2(input.screenUV).rgb;
+    return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
+}
+
+
+// 补偿丢失的散射光
+float4 BloomScatterFinalFragment(Varyings input) : SV_TARGET
+{
+    float3 lowRes;
+    if (_BloomBicubicUpsampling)
+    {
+        lowRes = GetSourceBicubic(input.screenUV).rgb;
+    }
+    else    
+    {
+        lowRes = GetSource(input.screenUV).rgb;
+    }
+    float3 hightRes = GetSource2(input.screenUV).rgb;
+    // 补偿丢失的散射光
+    lowRes += hightRes - ApplyBloomThreshold(hightRes);
+    return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
+}
 
 
 #endif

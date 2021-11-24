@@ -28,15 +28,19 @@ partial class PostFXStack
     private int bloomPyramidId;
     enum Pass
     {
-        // BloomPrefilter,
-        // BloomCombine,
         BloomVertical,
         BloomHorizontal,
-        BloomCombine,
+        BloomAdd,
         BloomPrefilter,
+        BloomPrefilterFirefiles,
+        BloomScatter,
+        // 补偿丢失的散射光
+        BloomScatterFinal,
         Copy,
     }
-
+    // 是否使用HDR
+    private bool useHDR;
+    
     public PostFXStack()
     {
         bloomPyramidId = Shader.PropertyToID("_BloomPyramid0");
@@ -53,74 +57,95 @@ partial class PostFXStack
         buffer.BeginSample("Bloom");
         PostFXSettings.BloomSettings bloom = settings.Bloom;
         int width = camera.pixelWidth / 2, height = camera.pixelHeight / 2;
-        
+
         Vector4 threshold;
         threshold.x = Mathf.GammaToLinearSpace(bloom.threshold);
         threshold.y = threshold.x * bloom.thresholdKnee;
         threshold.z = threshold.y * 2f;
-        threshold.w = 0.25f /( threshold.y + 0.00001f);
+        threshold.w = 0.25f / (threshold.y + 0.00001f);
         threshold.y -= threshold.x;
-        buffer.SetGlobalVector(bloomThresholdId,threshold);
-        
-        
-        
-        RenderTextureFormat format = RenderTextureFormat.Default;
-        buffer.GetTemporaryRT(bloomPrefilterId,width,height,0,FilterMode.Bilinear,format);
-        Draw(sourceId,bloomPrefilterId,Pass.BloomPrefilter);
+        buffer.SetGlobalVector(bloomThresholdId, threshold);
+
+
+
+        RenderTextureFormat format = useHDR ? RenderTextureFormat.DefaultHDR : RenderTextureFormat.Default;
+        buffer.GetTemporaryRT(bloomPrefilterId, width, height, 0, FilterMode.Bilinear, format);
+        Draw(sourceId, bloomPrefilterId, bloom.fadeFirefiles ? Pass.BloomPrefilterFirefiles : Pass.BloomPrefilter);
         width /= 2;
         height /= 2;
         int formId = bloomPrefilterId;
         int toId = bloomPyramidId + 1;
 
         int i;
-        for ( i = 0; i < bloom.maxIterations; i++)
+        for (i = 0; i < bloom.maxIterations; i++)
         {
-            if (bloom.maxIterations == 0 || bloom.intensity <=0 || height < bloom.downscaleLimit * 2 || width < bloom.downscaleLimit * 2)
+            if (bloom.maxIterations == 0 || bloom.intensity <= 0 || height < bloom.downscaleLimit * 2 ||
+                width < bloom.downscaleLimit * 2)
             {
                 break;
             }
 
             int midId = toId - 1;
-            buffer.GetTemporaryRT(midId,width,height,0,FilterMode.Bilinear,format);
-            buffer.GetTemporaryRT(toId,width,height,0,FilterMode.Bilinear,format);
-            Draw(formId, midId,Pass.BloomHorizontal);
-            Draw(midId,toId,Pass.BloomVertical);
+            buffer.GetTemporaryRT(midId, width, height, 0, FilterMode.Bilinear, format);
+            buffer.GetTemporaryRT(toId, width, height, 0, FilterMode.Bilinear, format);
+            Draw(formId, midId, Pass.BloomHorizontal);
+            Draw(midId, toId, Pass.BloomVertical);
             formId = toId;
             toId += 2;
             width /= 2;
             height /= 2;
         }
+
         buffer.ReleaseTemporaryRT(bloomPrefilterId);
-        buffer.SetGlobalFloat(bloomBucibicUpsamplingId,bloom.bicubicUpsampling ? 1f : 0f);
-        buffer.SetGlobalFloat(bloomIntensityId,bloom.intensity);
-        //Draw(formId,BuiltinRenderTextureType.CameraTarget,Pass.BloomHorizontal);
-        if (i>1)
+        buffer.SetGlobalFloat(bloomBucibicUpsamplingId, bloom.bicubicUpsampling ? 1f : 0f);
+
+        Pass combinePass, finalPass;
+        float finalIntensity;
+        if (bloom.mode == PostFXSettings.BloomSettings.Mode.Additive)
         {
-            
-        
-        buffer.ReleaseTemporaryRT(formId - 1);
-        toId -= 5;
-        for (i -= 1; i > 0; i--)
-        {
-            buffer.SetGlobalTexture(fxSource2Id,toId+1);
-            Draw(formId,toId,Pass.BloomCombine);
-            buffer.ReleaseTemporaryRT(formId);
-            buffer.ReleaseTemporaryRT(toId + 1);
-            formId = toId;
-            toId -= 2;
+            combinePass =finalPass= Pass.BloomAdd;
+            buffer.SetGlobalFloat(bloomIntensityId, 1f);
+            finalIntensity = bloom.intensity;
         }
+        else
+        {
+            combinePass = Pass.BloomScatter;
+            finalPass = Pass.BloomScatterFinal;
+            buffer.SetGlobalFloat(bloomIntensityId, bloom.scatter);
+            finalIntensity = Mathf.Min(bloom.intensity, bloom.scatter);
+        }
+
+
+
+        //Draw(formId,BuiltinRenderTextureType.CameraTarget,Pass.BloomHorizontal);
+        if (i > 1)
+        {
+
+
+            buffer.ReleaseTemporaryRT(formId - 1);
+            toId -= 5;
+            for (i -= 1; i > 0; i--)
+            {
+                buffer.SetGlobalTexture(fxSource2Id, toId + 1);
+                Draw(formId, toId, combinePass);
+                buffer.ReleaseTemporaryRT(formId);
+                buffer.ReleaseTemporaryRT(toId + 1);
+                formId = toId;
+                toId -= 2;
+            }
         }
         else
         {
             buffer.ReleaseTemporaryRT(bloomPyramidId);
         }
-        buffer.SetGlobalTexture(fxSource2Id,sourceId);
-        Draw(formId,BuiltinRenderTextureType.CameraTarget,Pass.BloomCombine);
+        buffer.SetGlobalFloat(bloomIntensityId,finalIntensity);
+        buffer.SetGlobalTexture(fxSource2Id, sourceId);
+        Draw(formId, BuiltinRenderTextureType.CameraTarget, finalPass);
         buffer.ReleaseTemporaryRT(formId);
         buffer.EndSample("Bloom");
     }
-    
-    
+
+
     /// <summary>
     /// 用来替换 buff.Blit 的函数， 比Blit 更高效
     /// </summary>
@@ -133,11 +158,12 @@ partial class PostFXStack
         buffer.SetRenderTarget(to,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
         buffer.DrawProcedural(Matrix4x4.identity, settings.Material,(int)pass,MeshTopology.Triangles,3);
     }
-    public void Setup(ScriptableRenderContext context, Camera camera, PostFXSettings settings)
+    public void Setup(ScriptableRenderContext context, Camera camera, PostFXSettings settings,bool useHDR)
     {
         this.context = context;
         this.camera = camera;
         this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
+        this.useHDR = useHDR;
         ApplySceneViewState();
     }
     
