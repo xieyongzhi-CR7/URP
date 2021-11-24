@@ -23,6 +23,8 @@ partial class PostFXStack
     private int bloomPrefilterId = Shader.PropertyToID("_BloomPrefilter");
     private int bloomThresholdId = Shader.PropertyToID("_BloomThreshold");
     private int bloomIntensityId = Shader.PropertyToID("_BloomIntensity");
+
+    private int bloomResultId = Shader.PropertyToID("_BloomResult");
     public bool IsActive => settings != null;
     private const int maxBloomPyramidLevels = 16;
     private int bloomPyramidId;
@@ -36,6 +38,11 @@ partial class PostFXStack
         BloomScatter,
         // 补偿丢失的散射光
         BloomScatterFinal,
+        
+        // toneMapping 的不同模式
+        ToneMappingReinhard,
+        ToneMappingNeutral,
+        ToneMappingACES,
         Copy,
     }
     // 是否使用HDR
@@ -51,13 +58,26 @@ partial class PostFXStack
         }
     }
 
-
-    void DoBloom(int sourceId)
+    void DoToneMapping(int sourceId)
     {
-        buffer.BeginSample("Bloom");
+        PostFXSettings.ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
+        Pass pass = mode < 0 ? Pass.Copy : Pass.ToneMappingReinhard + (int)mode;
+        Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
+    }
+
+    bool DoBloom(int sourceId)
+    {
         PostFXSettings.BloomSettings bloom = settings.Bloom;
         int width = camera.pixelWidth / 2, height = camera.pixelHeight / 2;
-
+        if (bloom.maxIterations == 0 || bloom.intensity <= 0 || height < bloom.downscaleLimit * 2 ||
+            width < bloom.downscaleLimit * 2)
+        {
+            // Draw(sourceId,BuiltinRenderTextureType.CameraTarget,Pass.Copy);
+            // buffer.EndSample("Bloom");
+            //Debug.LogError(" 000000 width="+width+"  height="+height+"  bloom.maxIterations="+bloom.maxIterations+"  bloom.intensity="+bloom.intensity);
+            return false;
+        }
+        buffer.BeginSample("Bloom");
         Vector4 threshold;
         threshold.x = Mathf.GammaToLinearSpace(bloom.threshold);
         threshold.y = threshold.x * bloom.thresholdKnee;
@@ -82,9 +102,12 @@ partial class PostFXStack
             if (bloom.maxIterations == 0 || bloom.intensity <= 0 || height < bloom.downscaleLimit * 2 ||
                 width < bloom.downscaleLimit * 2)
             {
+                //Debug.LogError(" 111111 width="+width+"  height="+height+"  bloom.maxIterations="+bloom.maxIterations+"  bloom.intensity="+bloom.intensity);
+                // Draw(sourceId,BuiltinRenderTextureType.CameraTarget,Pass.Copy);
+                // buffer.EndSample("Bloom");
+                //return false;
                 break;
             }
-
             int midId = toId - 1;
             buffer.GetTemporaryRT(midId, width, height, 0, FilterMode.Bilinear, format);
             buffer.GetTemporaryRT(toId, width, height, 0, FilterMode.Bilinear, format);
@@ -140,9 +163,12 @@ partial class PostFXStack
         }
         buffer.SetGlobalFloat(bloomIntensityId,finalIntensity);
         buffer.SetGlobalTexture(fxSource2Id, sourceId);
-        Draw(formId, BuiltinRenderTextureType.CameraTarget, finalPass);
+        // 由于应用toneMapping,把bloom的结果先应用toneMapping 后再画到相机显示
+        buffer.GetTemporaryRT(bloomResultId,camera.pixelWidth,camera.pixelHeight,0,FilterMode.Bilinear,format);
+        Draw(formId, bloomResultId, finalPass);
         buffer.ReleaseTemporaryRT(formId);
         buffer.EndSample("Bloom");
+        return true;
     }
 
 
@@ -170,7 +196,19 @@ partial class PostFXStack
     public void Render(int sourceId)
     {
         //Draw(sourceId,BuiltinRenderTextureType.CameraTarget,Pass.Copy);
-        DoBloom(sourceId);
+        if (DoBloom(sourceId))
+        {
+            Debug.LogError("执行bloom   toneMapping");
+            // 有bloom  则 将bloom结果应用 toneMapping
+            DoToneMapping(bloomResultId);
+            buffer.ReleaseTemporaryRT(bloomResultId);
+        }
+        else
+        {
+            //Debug.LogError("不执行 bloom  只toneMapping");
+            // 不存在bloom  则直接将结果应用 toneMapping
+            DoToneMapping(sourceId);
+        }
         //buffer.Blit(sourceId,BuiltinRenderTextureType.CameraTarget);
         context.ExecuteCommandBuffer(buffer);
         buffer.Clear();

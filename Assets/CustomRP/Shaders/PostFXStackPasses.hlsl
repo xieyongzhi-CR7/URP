@@ -1,7 +1,10 @@
+
 // unity  标准输入库
 #ifndef CUSTOM_POST_FX_STACE_INCLUDE 
 #define CUSTOM_POST_FX_STACE_INCLUDE
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Filtering.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Color.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/ACES.hlsl"
 TEXTURE2D(_PostFXSource);
 TEXTURE2D(_PostFXSource2);
 
@@ -21,10 +24,10 @@ float4 GetSourceTexelSize()
 //思路是从把从贴图采样到的颜色代入明亮度公式得到明亮度,  即 置灰
 //Luminance 是客观测量发光体的亮度，是个客观值
 
-float Luminance(float3 color)
-{
-    return dot(color,float3(0.2125,0.7154,0.0721));
-}
+//float Luminance(float3 color)
+//{
+  //  return dot(color,float3(0.2125,0.7154,0.0721));
+//}
 
 
 
@@ -204,5 +207,34 @@ float4 BloomScatterFinalFragment(Varyings input) : SV_TARGET
     return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
 }
 
+
+float4 ToneMappingReinhardPassFragment(Varyings input) : SV_TARGET
+{
+    float4 color = GetSource(input.screenUV);
+    color.rgb = min(color.rgb,60.0);
+    // 画面整体会变暗
+    color.rgb /= color.rgb + 1.0;
+    return color;
+}
+
+
+float4 ToneMappingNeutralPassFragment(Varyings input) : SV_TARGET
+{
+    float4 color = GetSource(input.screenUV);
+    color.rgb = min(color.rgb,60.0);
+    // 画面整体会变暗
+    color.rgb /= color.rgb + 1.0;// NeutralTonemap(color.rgb);
+    return color;
+}
+
+
+float4 ToneMappingACESPassFragment(Varyings input) : SV_TARGET
+{
+    float4 color = GetSource(input.screenUV);
+    color.rgb = min(color.rgb,60.0);
+    color.rgb = AcesTonemap(unity_to_ACES(color.rgb));
+    return color;
+
+}
 
 #endif
