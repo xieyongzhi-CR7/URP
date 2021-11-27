@@ -15,6 +15,84 @@ bool _BloomBicubicUpsampling;
 float4 _BloomThreshold;
 float _BloomIntensity;
 
+
+/////--------------------------------
+/////--------------------------------
+// 颜色分级
+/////--------------------------------
+float4 _ColorAdjustments;
+float4 _ColorFilterId;
+
+// 后曝光
+float3 ColorGradePostExposure(float3 color)
+{
+    return color * _ColorAdjustments.x;
+}
+
+// 对比度： 最亮的白 和 最黑的黑的 对比（对比度高，可以提高画质的明亮清晰程度； 低对比度灰蒙蒙）
+float3 ColorGradeingContrast(float3 color)
+{
+    color = LinearToLogC(color);
+    color =  (color - ACEScc_MIDGRAY) * _ColorAdjustments.y + ACEScc_MIDGRAY;
+    return LogCToLinear(color);
+}
+
+//  滤镜
+float3 ColorGradeColorFilter(float3 color)
+{
+    return color * _ColorFilterId.rgb;
+}
+
+
+float3 ColorGradingHueShift(float3 color)
+{
+    color = RgbToHsv(color);
+    float hue = color.x + _ColorAdjustments.x;
+    //  将色调限制在（0，1）  小于0： hue+1;    大于1：hue-1
+    color.x = RotateHue(hue,0.0,1.0);
+    return HsvToRgb(color);
+}
+
+//  饱和度： 
+float3 ColorGradingSaturation(float3 color)
+{
+    float luminance = Luminance(color);
+    return (color - luminance) * _ColorAdjustments.w + luminance;
+}
+
+
+
+
+
+
+
+
+
+float3 ColorGrade(float3 color)
+{
+    // 将颜色组件限制到60
+    color = min(color,60.0);
+    //  后曝光
+    color = ColorGradePostExposure(color);
+    // 对比度
+    color = ColorGradeingContrast(color);
+    // 滤镜
+    color = ColorGradeColorFilter(color);
+    color = max(color,0.0);
+    // 色调偏移
+    color = ColorGradingHueShift(color);
+    // 饱和度
+    color = ColorGradingSaturation(color);
+    return max(color,0.0);
+}
+
+
+
+/////--------------------------------
+/////--------------------------------
+// 颜色分级  end
+/////--------------------------------
+
 float4 GetSourceTexelSize()
 {
     return _PostFXSource_TexelSize;
@@ -207,11 +285,25 @@ float4 BloomScatterFinalFragment(Varyings input) : SV_TARGET
     return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
 }
 
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+
+//  颜色分级  : 在toneMapping 之前 设置颜色分级
+//float3 ColorGrade(float3 color)
+//{
+    // 将颜色组件限制到60
+  //  color = min(color,60.0);
+    //color = ColorGradePostExposure(color);
+    //return color;
+//}
+
+
 
 float4 ToneMappingReinhardPassFragment(Varyings input) : SV_TARGET
 {
     float4 color = GetSource(input.screenUV);
-    color.rgb = min(color.rgb,60.0);
+    color.rgb = ColorGrade(color.rgb);
     // 画面整体会变暗
     color.rgb /= color.rgb + 1.0;
     return color;
@@ -221,7 +313,7 @@ float4 ToneMappingReinhardPassFragment(Varyings input) : SV_TARGET
 float4 ToneMappingNeutralPassFragment(Varyings input) : SV_TARGET
 {
     float4 color = GetSource(input.screenUV);
-    color.rgb = min(color.rgb,60.0);
+    color.rgb = ColorGrade(color.rgb);
     // 画面整体会变暗
     color.rgb /= color.rgb + 1.0;// NeutralTonemap(color.rgb);
     return color;
@@ -231,10 +323,20 @@ float4 ToneMappingNeutralPassFragment(Varyings input) : SV_TARGET
 float4 ToneMappingACESPassFragment(Varyings input) : SV_TARGET
 {
     float4 color = GetSource(input.screenUV);
-    color.rgb = min(color.rgb,60.0);
+    color.rgb = ColorGrade(color.rgb);
     color.rgb = AcesTonemap(unity_to_ACES(color.rgb));
     return color;
-
 }
+
+
+float4 ToneMappingNonePassFragment(Varyings input) : SV_TARGET
+{
+    float4 color = GetSource(input.screenUV);
+    color.rgb = ColorGrade(color.rgb);
+    return color;
+}
+
+
+
 
 #endif

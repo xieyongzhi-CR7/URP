@@ -4,7 +4,8 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-
+//  using  static 类似于使用命名空间， 但使用的是类型。。。 它可以直接访类或者结果的所有常量
+using static PostFXSettings;
 partial class PostFXStack
 {
     private const string bufferName = "Post FX";
@@ -40,9 +41,11 @@ partial class PostFXStack
         BloomScatterFinal,
         
         // toneMapping 的不同模式
+        ToneMappingNone,
         ToneMappingReinhard,
         ToneMappingNeutral,
         ToneMappingACES,
+        
         Copy,
     }
     // 是否使用HDR
@@ -58,10 +61,13 @@ partial class PostFXStack
         }
     }
 
+
+    
+
     void DoToneMapping(int sourceId)
     {
         PostFXSettings.ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
-        Pass pass = mode < 0 ? Pass.Copy : Pass.ToneMappingReinhard + (int)mode;
+        Pass pass =  Pass.ToneMappingNone + (int)mode;
         Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
     }
 
@@ -200,14 +206,14 @@ partial class PostFXStack
         {
             Debug.LogError("执行bloom   toneMapping");
             // 有bloom  则 将bloom结果应用 toneMapping
-            DoToneMapping(bloomResultId);
+            DoColorGradingAndMapping(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
         }
         else
         {
             //Debug.LogError("不执行 bloom  只toneMapping");
             // 不存在bloom  则直接将结果应用 toneMapping
-            DoToneMapping(sourceId);
+            DoColorGradingAndMapping(sourceId);
         }
         //buffer.Blit(sourceId,BuiltinRenderTextureType.CameraTarget);
         context.ExecuteCommandBuffer(buffer);
@@ -221,5 +227,54 @@ partial class PostFXStack
     //         settings = null;
     //     }
     // }
+//------------------------------------------------
+//-------------颜色分级--------------------------
+//------------------------------------------------
+
+    private static int colorAdjustmentsId = Shader.PropertyToID("_ColorAdjustments");
+    private static int colorFilterId = Shader.PropertyToID("_ColorFilterId");
+    void ConfigureColorAdjustments()
+    {
+        ColorAdjustmentsSettings colorAdjustments = settings.ColorAdjustments;
+        
+        buffer.SetGlobalVector(colorAdjustmentsId,
+            new Vector4(
+                Mathf.Pow(2f,colorAdjustments.postExposure),
+            colorAdjustments.contrast * 0.01f + 1f,
+            colorAdjustments.hueShift * (1f / 360f),
+            colorAdjustments.saturation * 0.01f + 1f
+            ));
+        buffer.SetGlobalColor(colorFilterId,colorAdjustments.colorFilter.linear);
+    }
+
+
+    void DoColorGradingAndMapping(int sourceId)
+    {
+        ConfigureColorAdjustments();
+        ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
+        Pass pass = Pass.ToneMappingNone + (int) mode;
+        Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
+    }
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
 }

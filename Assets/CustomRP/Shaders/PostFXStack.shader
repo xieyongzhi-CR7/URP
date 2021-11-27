@@ -86,17 +86,27 @@ Shader "Hidden/CustomRP/PostFXStack"
             ENDHLSL
         }
 
+        Pass
+        {
+            Name "Bloom ToneMapingNone"        
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment ToneMappingNonePassFragment            
+            ENDHLSL
+        }
         
          Pass
         {
-            Name "Bloom ToneMapingReinhard"        
+            Name "Bloom ToneMapingACES"        
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
            
-            #pragma fragment ToneMappingReinhardPassFragment            
+            #pragma fragment ToneMappingNeutralPassFragment            
             ENDHLSL
         }
+
         Pass
         {
             Name "Bloom ToneMapingNeutral"        
@@ -108,16 +118,16 @@ Shader "Hidden/CustomRP/PostFXStack"
             ENDHLSL
         }
 
-        Pass
+         Pass
         {
-            Name "Bloom ToneMapingACES"        
+            Name "Bloom ToneMapingReinhard"        
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
            
-            #pragma fragment ToneMappingNeutralPassFragment            
+            #pragma fragment ToneMappingReinhardPassFragment            
             ENDHLSL
-        }
+        }      
         
         Pass
         {
