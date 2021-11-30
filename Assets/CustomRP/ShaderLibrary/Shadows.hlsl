@@ -2,7 +2,7 @@
 #ifndef CUSTOM_SHADOWS_INCLUDE 
 #define CUSTOM_SHADOWS_INCLUDE
 
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Shadow/ShadowSamplingTent.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Shadow/ShadowSamplingTent.hlsl"
 
 
 #if defined(_DIRECTIONAL_PCF3)

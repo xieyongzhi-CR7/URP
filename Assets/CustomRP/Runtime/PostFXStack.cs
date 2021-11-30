@@ -4,6 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 //  using  static 类似于使用命名空间， 但使用的是类型。。。 它可以直接访类或者结果的所有常量
 using static PostFXSettings;
 partial class PostFXStack
@@ -233,6 +234,7 @@ partial class PostFXStack
 
     private static int colorAdjustmentsId = Shader.PropertyToID("_ColorAdjustments");
     private static int colorFilterId = Shader.PropertyToID("_ColorFilterId");
+    private static int whiteBlanceId = Shader.PropertyToID("_WhiteBalance");
     void ConfigureColorAdjustments()
     {
         ColorAdjustmentsSettings colorAdjustments = settings.ColorAdjustments;
@@ -251,19 +253,61 @@ partial class PostFXStack
     void DoColorGradingAndMapping(int sourceId)
     {
         ConfigureColorAdjustments();
+        ConfigureWhiteBlance();
+        ConfigureSplitToning();
+        ConfigureChannelMixer();
+        ConfigureShadowsMidtonesHighlights();
         ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
         Pass pass = Pass.ToneMappingNone + (int) mode;
         Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
     }
+
+
+    // 白平衡
     
-    
-    
-    
-    
-    
-    
-    
-    
+    void ConfigureWhiteBlance()
+    {
+        WihteBalanceSettings whiteBalance = settings.WhiteBalance; 
+        buffer.SetGlobalVector(whiteBlanceId,ColorUtils.ColorBalanceToLMSCoeffs(whiteBalance.temperature,whiteBalance.tint));
+    }
+
+    private static int splitToningShadowsId = Shader.PropertyToID("_SplitToningShadows");
+    private static int splitToningHightLihgtsId = Shader.PropertyToID("_SplitToningHightLihgts");
+    void ConfigureSplitToning()
+    {
+        SplitToningSettings splitToning = settings.SplitToning;
+        Color splitColor = splitToning.shadows;
+        splitColor.a = splitToning.balance * 0.01f;
+        buffer.SetGlobalColor(splitToningShadowsId,splitColor);
+        buffer.SetGlobalColor(splitToningHightLihgtsId,splitToning.hightLights);
+    }
+
+    private static int channelMixerRedId = Shader.PropertyToID("_ChannelMixerRed");
+    private static int channelMixerGreenId = Shader.PropertyToID("_ChannelMixerGreen");
+    private static int channelMixerBlueId = Shader.PropertyToID("_ChannelMixerBlue");
+
+
+    void ConfigureChannelMixer()
+    {
+        ChannelMixerSettings channelMixer = settings.ChannelMixer;
+        buffer.SetGlobalVector(channelMixerRedId,channelMixer.red);
+        buffer.SetGlobalVector(channelMixerGreenId,channelMixer.green);
+        buffer.SetGlobalVector(channelMixerBlueId,channelMixer.blue);
+    }
+
+
+    private static int smhShadowId = Shader.PropertyToID("_SMHShadows");
+    private static int smhMidtonesId = Shader.PropertyToID("_SMHMidtones");
+    private static int smhHighlightsId = Shader.PropertyToID("_SMHHighlights");
+    private static int smhRangeId = Shader.PropertyToID("_SMHRange");
+    void ConfigureShadowsMidtonesHighlights()
+    {
+        ShadowsMidtonesHightlightsSettings smh = settings.ShadowsMidtonesHightlights;
+        buffer.SetGlobalColor(smhShadowId,smh.shadows);
+        buffer.SetGlobalColor(smhMidtonesId,smh.midtones);
+        buffer.SetGlobalColor(smhHighlightsId,smh.hightlights);
+        buffer.SetGlobalVector(smhRangeId,new Vector4(smh.shadowStart,smh.shadowsEnd,smh.hightlightsStart,smh.highLightsEnd));
+    }    
     
     
     

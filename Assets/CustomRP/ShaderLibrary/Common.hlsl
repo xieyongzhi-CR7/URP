@@ -9,14 +9,14 @@
 #define UNITY_MATRIX_P glstate_matrix_projection;
 #include "UnityInput.hlsl"
 
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Common.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/CommonMaterial.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Common.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/CommonMaterial.hlsl"
 #if defined(_SHADOW_MASK_DISTANCE) || defined(_SHAODW_MASK_ALWAYS)
     #define SHADOW_SHADOWMASK
 #endif
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/UnityInstancing.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/SpaceTransforms.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Packing.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/UnityInstancing.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/SpaceTransforms.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Packing.hlsl"
 
 //float4 TransformObjectToWorld(float3 positionOS)
 //{

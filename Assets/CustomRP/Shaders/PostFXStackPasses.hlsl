@@ -2,9 +2,9 @@
 // unity  标准输入库
 #ifndef CUSTOM_POST_FX_STACE_INCLUDE 
 #define CUSTOM_POST_FX_STACE_INCLUDE
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Filtering.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Color.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/ACES.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Filtering.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Color.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/ACES.hlsl"
 TEXTURE2D(_PostFXSource);
 TEXTURE2D(_PostFXSource2);
 
@@ -14,6 +14,63 @@ float4 _PostFXSource_TexelSize;
 bool _BloomBicubicUpsampling;
 float4 _BloomThreshold;
 float _BloomIntensity;
+
+// 白平衡
+float4 _WhiteBalance;
+
+
+
+
+float Luminance(float3 color, bool useACES)
+{
+    return useACES ? AcesLuminance(color) : Luminance(color);
+}
+
+
+//// 色调分离
+float4 _SplitToningShadows,_SplitToningHightLights;
+float3 ColorGradeSplitToning(float3 color, bool useACES )
+{
+    color = PositivePow(color,1.0 / 2.0);
+    //float3 shadows = _SplitToningShadows.rbg;
+    //float3 hightLights = _SplitToningHightLights.rgb;
+    float t = saturate(Luminance(saturate(color),useACES) + _SplitToningShadows.w);
+    float3 shadows = lerp(0.5,_SplitToningShadows.rgb,1.0-t);
+    float3 hightLights = lerp(0.5, _SplitToningHightLights.rgb,t);
+    color = SoftLight(color,shadows);
+    color = SoftLight(color,hightLights);  
+    return PositivePow(color,2.2);
+}
+
+
+//  通道混合  channelMixer
+float4 _ChannelMixerRed,_ChannelMixerGreen,_ChannelMixerBlue;
+float3 ColorGradingChannelMixer(float3 color)
+{
+    return mul(float3x3(_ChannelMixerRed.rgb,_ChannelMixerGreen.rgb,_ChannelMixerBlue.rgb),color);
+}
+
+
+//////  
+
+float4 _SMHShadows;
+float4 _SMHMidtones;
+float4 _SMHHighlights;
+float4 _SMHRange;
+
+float3 ColorGradingShadowsMidtonesHighlights(float3 color,bool useACES)
+{
+    float luminance = Luminance(color, useACES);
+    float shadowsWeight = 1.0 - smoothstep(_SMHRange.x,_SMHRange.y,luminance);
+    float highlightsWeight = smoothstep(_SMHRange.z,_SMHRange.w,luminance);
+    float midtonesWeight = 1.0 - shadowsWeight - highlightsWeight;
+    return color * _SMHShadows.rgb * shadowsWeight + color * _SMHHighlights.rgb * highlightsWeight 
+            + color  * _SMHMidtones * midtonesWeight;
+
+}
+
+
+
 
 
 /////--------------------------------
@@ -30,11 +87,11 @@ float3 ColorGradePostExposure(float3 color)
 }
 
 // 对比度： 最亮的白 和 最黑的黑的 对比（对比度高，可以提高画质的明亮清晰程度； 低对比度灰蒙蒙）
-float3 ColorGradeingContrast(float3 color)
+float3 ColorGradeingContrast(float3 color, bool useACES)
 {
-    color = LinearToLogC(color);
+    color =  useACES ? ACES_to_ACEScc(unity_to_ACES(color)) : LinearToLogC(color);
     color =  (color - ACEScc_MIDGRAY) * _ColorAdjustments.y + ACEScc_MIDGRAY;
-    return LogCToLinear(color);
+    return  useACES ? ACES_to_ACEScg(ACEScc_to_ACES(color)) : LogCToLinear(color);
 }
 
 //  滤镜
@@ -47,17 +104,28 @@ float3 ColorGradeColorFilter(float3 color)
 float3 ColorGradingHueShift(float3 color)
 {
     color = RgbToHsv(color);
-    float hue = color.x + _ColorAdjustments.x;
+    float hue = color.x + _ColorAdjustments.z;
     //  将色调限制在（0，1）  小于0： hue+1;    大于1：hue-1
     color.x = RotateHue(hue,0.0,1.0);
     return HsvToRgb(color);
 }
 
-//  饱和度： 
-float3 ColorGradingSaturation(float3 color)
+//  饱和度： 指色彩的鲜艳程度，
+//取决于 该色中含色成分和  消色成分（灰色）的比例
+//   含色成分越大，饱和度越大，    消色成分越大 饱和度越小                
+float3 ColorGradingSaturation(float3 color,bool useACES)
 {
-    float luminance = Luminance(color);
+    float luminance = Luminance(color, useACES);
     return (color - luminance) * _ColorAdjustments.w + luminance;
+}
+
+
+// 白平衡
+float3 ColorGradeWhiteBalance(float3 color)
+{
+    color = LinearToLMS(color);
+    color *= _WhiteBalance.rgb;
+    return LMSToLinear(color);
 }
 
 
@@ -66,24 +134,32 @@ float3 ColorGradingSaturation(float3 color)
 
 
 
-
-
-float3 ColorGrade(float3 color)
+float3 ColorGrade(float3 color,bool useACES = false)
 {
     // 将颜色组件限制到60
     color = min(color,60.0);
     //  后曝光
     color = ColorGradePostExposure(color);
+    
+    //白平衡
+    color = ColorGradeWhiteBalance(color);
+    
     // 对比度
-    color = ColorGradeingContrast(color);
+    color = ColorGradeingContrast(color,useACES);
     // 滤镜
     color = ColorGradeColorFilter(color);
     color = max(color,0.0);
+    // 色调分离
+    color = ColorGradeSplitToning(color,useACES);
+    // 通道混合
+    color = ColorGradingChannelMixer(color);
+    color = max(color,0.0);
+    color = ColorGradingShadowsMidtonesHighlights(color,useACES);
     // 色调偏移
     color = ColorGradingHueShift(color);
     // 饱和度
-    color = ColorGradingSaturation(color);
-    return max(color,0.0);
+    color = ColorGradingSaturation(color,useACES);
+    return max(useACES ? ACEScg_to_ACES(color) : color ,0.0);
 }
 
 
@@ -323,8 +399,8 @@ float4 ToneMappingNeutralPassFragment(Varyings input) : SV_TARGET
 float4 ToneMappingACESPassFragment(Varyings input) : SV_TARGET
 {
     float4 color = GetSource(input.screenUV);
-    color.rgb = ColorGrade(color.rgb);
-    color.rgb = AcesTonemap(unity_to_ACES(color.rgb));
+    color.rgb = ColorGrade(color.rgb,true);
+    color.rgb = AcesTonemap(color.rgb);
     return color;
 }
 

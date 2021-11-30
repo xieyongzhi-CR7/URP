@@ -13,6 +13,15 @@ MonoBehaviour:
   m_Name: PostFXSettings
   m_EditorClassIdentifier: 
   shader: {fileID: 4800000, guid: 59c61389650b27b4d9a3a32afb30a531, type: 3}
+  whiteBalance:
+    temperature: -0.7
+    tint: 70.7
+  colorAdjustments:
+    postExposure: -0.4
+    contrast: 28.8
+    colorFilter: {r: 1, g: 1, b: 1, a: 1}
+    hueShift: 65
+    saturation: 5.7
   bloom:
     maxIterations: 16
     downscaleLimit: 1
@@ -24,4 +33,20 @@ MonoBehaviour:
     mode: 1
     scatter: 0.38
   toneMapping:
-    mode: 0
+    mode: 1
+  splitToning:
+    shadows: {r: 0.039456423, g: 0.8962264, b: 0.13465314, a: 0}
+    hightLights: {r: 1, g: 0.17549156, b: 0.044025064, a: 0}
+    balance: -18.3
+  channelMixer:
+    red: {x: 1, y: 0, z: 0}
+    green: {x: 0, y: 0.5, z: 0}
+    blue: {x: 0, y: 0.5, z: 0}
+  shadowsMidtonesHightlights:
+    shadows: {r: 0.6412018, g: 0.8962264, b: 0.07327632, a: 1}
+    midtones: {r: 1, g: 1, b: 1, a: 1}
+    hightlights: {r: 0, g: 0.9056604, b: 0.3641512, a: 1}
+    shadowStart: 0
+    shadowsEnd: 0.246
+    hightlightsStart: 0.589
+    highLightsEnd: 0.838

@@ -1,7 +1,7 @@
 // unity  标准输入库
 #ifndef CUSTOM_UNITY_INPUT_INCLUDE 
 #define CUSTOM_UNITY_INPUT_INCLUDE
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/Common.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Common.hlsl"
 
 
 

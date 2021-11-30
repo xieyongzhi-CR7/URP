@@ -3,8 +3,8 @@
 #define CUSTOM_GI_INCLUDE
 
 
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/EntityLighting.hlsl"
-#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.3.2/ShaderLibrary/ImageBasedLighting.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/EntityLighting.hlsl"
+#include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/ImageBasedLighting.hlsl"
 
 
 

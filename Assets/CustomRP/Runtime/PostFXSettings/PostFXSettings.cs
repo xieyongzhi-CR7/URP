@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.Serialization;
 
 [CreateAssetMenu(menuName = "Rendering/Custom Post FX Settings")]
@@ -38,6 +39,20 @@ public class PostFXSettings : ScriptableObject
         [Range(0.05f,0.95f)]
         public float scatter;
     }
+    [Serializable]
+    public struct WihteBalanceSettings
+    {
+        [Range(-100f,100f)]//   第一个参数是 色温： 使图像更冷或更热 、、、、 第二个参数是 Tint 色调: 调整温度变化后的颜色
+        public float temperature, tint;
+    }
+
+    [SerializeField]
+    private WihteBalanceSettings whiteBalance;
+    
+    public WihteBalanceSettings WhiteBalance => whiteBalance;
+    
+    
+    
 
     [Serializable]
     public struct ColorAdjustmentsSettings
@@ -108,4 +123,73 @@ public class PostFXSettings : ScriptableObject
             return material;
         }
     }
+
+
+    #region 色调分离
+
+    [Serializable]
+    public struct SplitToningSettings
+    {
+        [ColorUsage(false)]
+        public Color shadows, hightLights;
+        [Range(-100f,100f)]
+        public float balance;
+    }
+    [SerializeField]
+    SplitToningSettings splitToning = new SplitToningSettings
+    {
+        shadows =   Color.gray,
+        hightLights = Color.gray
+    };
+
+    public SplitToningSettings SplitToning => splitToning;
+
+
+    #endregion
+
+    
+
+    
+    #region 通道混合 ChannelMixer
+    
+    [Serializable]
+    public struct ChannelMixerSettings
+    {
+        public Vector3 red, green, blue;
+    }
+    [SerializeField]
+    private ChannelMixerSettings channelMixer = new ChannelMixerSettings
+    {
+        red = Vector3.right,
+        green = Vector3.up,
+        blue = Vector3.forward,
+    };
+
+    public ChannelMixerSettings ChannelMixer => channelMixer;
+    #endregion
+    #region 控制阴影和中间色调
+
+    [Serializable]
+    public struct ShadowsMidtonesHightlightsSettings
+    {
+        [ColorUsage(false)]
+        public Color shadows, midtones,hightlights;
+        [Range(0f,2f)]
+        public float shadowStart,shadowsEnd,hightlightsStart,highLightsEnd;
+    }
+    [SerializeField]
+    ShadowsMidtonesHightlightsSettings shadowsMidtonesHightlights = new ShadowsMidtonesHightlightsSettings
+    {
+        shadows =   Color.white,
+        midtones = Color.white,
+        hightlights = Color.white,
+        shadowsEnd = 0.3f,
+        hightlightsStart = 0.55f,
+        highLightsEnd = 1f,
+    };
+
+    public ShadowsMidtonesHightlightsSettings ShadowsMidtonesHightlights => shadowsMidtonesHightlights;
+
+
+    #endregion
 }
