@@ -13,7 +13,7 @@ CBUFFER_START(UnityPerDraw)
     float4x4 unity_WorldToObject;
     real4 unity_WorldTransformParams;
     
-    
+    float4 unity_RenderingLayer;
     
     
     // x 分量存储的是过渡因子

@@ -51,7 +51,7 @@ Shader "CustomRP/Lit"
         {
             // 第一步先设置  LightMode
             Tags{"LightMode"="CustomLit"}
-            Blend[_SrcBlend][_DstBlend]
+            Blend[_SrcBlend][_DstBlend],One OneMinusSrcAlpha
             ZWrite[_ZWrite]
             HLSLPROGRAM
             #pragma target 3.5

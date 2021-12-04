@@ -21,5 +21,6 @@ struct Surface
     float dither;
     // 菲涅尔强度
     float fresnelStrength;
+    uint renderingLayerMask;
 };
 #endif

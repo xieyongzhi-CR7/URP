@@ -99,11 +99,13 @@ Shader "Hidden/CustomRP/PostFXStack"
          Pass
         {
             Name "Bloom ToneMapingACES"        
+            //Blend SrcAlpha OneMinusSrcAlpha   
+            Blend [_FinalSrcBlend] [_FinalDesBlend]
             HLSLPROGRAM
             #pragma target 3.5
             #pragma vertex DefaultPassVertex
            
-            #pragma fragment ToneMappingNeutralPassFragment            
+            #pragma fragment ToneMappingACESPassFragment            
             ENDHLSL
         }
 
@@ -128,6 +130,15 @@ Shader "Hidden/CustomRP/PostFXStack"
             #pragma fragment ToneMappingReinhardPassFragment            
             ENDHLSL
         }      
+        Pass
+        {
+            Name "Final"     
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CopyPassFragment            
+            ENDHLSL
+        }
         
         Pass
         {

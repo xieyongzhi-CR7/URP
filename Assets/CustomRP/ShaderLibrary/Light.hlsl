@@ -10,7 +10,7 @@ CBUFFER_START(_CustomLight)
     //float3 _DirectionalLightDirection;
     int _DirectionalLightCount;
     float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];
-    float4 _DirectionalLightDirections[MAX_DIRECTIONAL_LIGHT_COUNT];
+    float4 _DirectionalLightDirectionsAndMasks[MAX_DIRECTIONAL_LIGHT_COUNT];
     // 阴影数据
     float4 _DirectionalLightShadowData[MAX_DIRECTIONAL_LIGHT_COUNT];
     
@@ -18,7 +18,7 @@ CBUFFER_START(_CustomLight)
     int _OtherLightCount;
     float4 _OtherLightColors[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightPositions[MAX_OTHER_LIGHT_COUNT];
-    float4 _OtherLightDirections[MAX_OTHER_LIGHT_COUNT];
+    float4 _OtherLightDirectionsAndMasks[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightSpotAngles[MAX_OTHER_LIGHT_COUNT];
     float4 _OtherLightShadowData[MAX_OTHER_LIGHT_COUNT];    
 CBUFFER_END
@@ -34,6 +34,7 @@ struct Light
     float3 color;
     float3 direction;
     float attenuation;
+    uint renderingLayerMask;
 };
 
 
@@ -55,7 +56,8 @@ Light GetDirectionalLight(int index,Surface surfaceWS,ShadowData shadowData)
 {
     Light light;
     light.color = _DirectionalLightColors[index].rgb;
-    light.direction = _DirectionalLightDirections[index].xyz;
+    light.direction = _DirectionalLightDirectionsAndMasks[index].xyz;
+    light.renderingLayerMask = asuint(_DirectionalLightDirectionsAndMasks[index].w);
     // 得到阴影数据
     DirectionalShadowData dirShadowData = GetDirectionalShadowData(index,shadowData);
     // 得到阴影衰减
@@ -100,7 +102,8 @@ Light GetOtherLight(int index, Surface surfaceWS,ShadowData shadowData)
     
     float4 spotAngle = _OtherLightSpotAngles[index];
     
-    float3 spotDirection = _OtherLightDirections[index].xyz;
+    float3 spotDirection = _OtherLightDirectionsAndMasks[index].xyz;
+    light.renderingLayerMask = _OtherLightDirectionsAndMasks[index].w;
     // spot 的衰减
     float spotAttenuation =Square1( saturate(dot(spotDirection,light.direction) * spotAngle.x + spotAngle.y));    
     OtherShadowData otherShadowData = GetOtherShadowData(index);

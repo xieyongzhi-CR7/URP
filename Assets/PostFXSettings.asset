@@ -23,30 +23,30 @@ MonoBehaviour:
     hueShift: 65
     saturation: 5.7
   bloom:
-    maxIterations: 16
+    maxIterations: 2
     downscaleLimit: 1
     bicubicUpsampling: 1
     threshold: 1
-    thresholdKnee: 0.679
-    intensity: 3.98
+    thresholdKnee: 0.814
+    intensity: 3.93
     fadeFirefiles: 1
     mode: 1
     scatter: 0.38
   toneMapping:
     mode: 1
   splitToning:
-    shadows: {r: 0.039456423, g: 0.8962264, b: 0.13465314, a: 0}
-    hightLights: {r: 1, g: 0.17549156, b: 0.044025064, a: 0}
-    balance: -18.3
+    shadows: {r: 0, g: 0, b: 0, a: 0}
+    hightLights: {r: 0.990566, g: 0.990566, b: 0.990566, a: 0}
+    balance: 7.8
   channelMixer:
     red: {x: 1, y: 0, z: 0}
-    green: {x: 0, y: 0.5, z: 0}
+    green: {x: 0, y: -1.57, z: 0}
     blue: {x: 0, y: 0.5, z: 0}
   shadowsMidtonesHightlights:
-    shadows: {r: 0.6412018, g: 0.8962264, b: 0.07327632, a: 1}
+    shadows: {r: 0.009433985, g: 0.009433985, b: 0.009433985, a: 1}
     midtones: {r: 1, g: 1, b: 1, a: 1}
-    hightlights: {r: 0, g: 0.9056604, b: 0.3641512, a: 1}
+    hightlights: {r: 0.58152366, g: 0.764151, b: 0.65504897, a: 1}
     shadowStart: 0
-    shadowsEnd: 0.246
-    hightlightsStart: 0.589
-    highLightsEnd: 0.838
+    shadowsEnd: 0
+    hightlightsStart: 0
+    highLightsEnd: 0

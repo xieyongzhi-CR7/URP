@@ -148,13 +148,13 @@ float3 ColorGrade(float3 color,bool useACES = false)
     color = ColorGradeingContrast(color,useACES);
     // 滤镜
     color = ColorGradeColorFilter(color);
-    color = max(color,0.0);
+    //color = max(color,0.0);
     // 色调分离
-    color = ColorGradeSplitToning(color,useACES);
+    //color = ColorGradeSplitToning(color,useACES);
     // 通道混合
-    color = ColorGradingChannelMixer(color);
+    //color = ColorGradingChannelMixer(color);
     color = max(color,0.0);
-    color = ColorGradingShadowsMidtonesHighlights(color,useACES);
+    //color = ColorGradingShadowsMidtonesHighlights(color,useACES);
     // 色调偏移
     color = ColorGradingHueShift(color);
     // 饱和度
@@ -283,8 +283,8 @@ float4 BloomCombinePassFragment(Varyings input):SV_TARGET
         lowRes = GetSource(input.screenUV).rgb;
     }
     
-    float3 hightRes = GetSource2(input.screenUV).rgb;
-    return float4(lowRes * _BloomIntensity + hightRes,1.0);
+    float4 hightRes = GetSource2(input.screenUV).rgba;
+    return float4(lowRes * _BloomIntensity + hightRes,hightRes.a);
 }
 
 // 应用阈值， 
@@ -338,8 +338,8 @@ float4 BloomScatterPassFragment(Varyings input) : SV_TARGET
     {
         lowRes = GetSource(input.screenUV).rgb;
     }
-    float3 hightRes = GetSource2(input.screenUV).rgb;
-    return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
+    float4 hightRes = GetSource2(input.screenUV).rgba;
+    return float4(lerp(hightRes,lowRes,_BloomIntensity),hightRes.a);
 }
 
 
@@ -355,10 +355,10 @@ float4 BloomScatterFinalFragment(Varyings input) : SV_TARGET
     {
         lowRes = GetSource(input.screenUV).rgb;
     }
-    float3 hightRes = GetSource2(input.screenUV).rgb;
+    float4 hightRes = GetSource2(input.screenUV).rgba;
     // 补偿丢失的散射光
     lowRes += hightRes - ApplyBloomThreshold(hightRes);
-    return float4(lerp(hightRes,lowRes,_BloomIntensity),1.0);
+    return float4(lerp(hightRes,lowRes,_BloomIntensity),hightRes.a);
 }
 
 //------------------------------------------------------------------------

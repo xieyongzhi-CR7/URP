@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 using  UnityEngine.Rendering;
 
@@ -28,10 +29,20 @@ public partial class CameraRenderer
     PostFXStack postFxStack = new PostFXStack();
     private static int frameBufferId = Shader.PropertyToID("_CameraFrameBuffer");
     private bool useHDR;
+    
+    static CameraSettings defaultCameraSettings = new CameraSettings();
     public void Render(ScriptableRenderContext context, Camera camera,bool useDynamicBatching,bool useGPUInstancing,ShadowSettings shadowSettings,PostFXSettings postFxSettings,bool allowHDR)
     {
         this.camera = camera;
         this.context = context;
+        var crpCamera = camera.GetComponent<CustomRenderPipelineCamera>();
+        CameraSettings cameraSettings = crpCamera ? crpCamera.Settings : defaultCameraSettings;
+        if (cameraSettings.overridePostFX)
+        {
+            // 使用  管线的后处理  覆盖此相机的FX设置
+            postFxSettings = cameraSettings.postFxSettings;
+        } 
+        
         // 设置命令缓冲区的名字
         PrepareBuffer();
         //  在Game 视图绘制的几何体也绘制到scene视图中
@@ -45,11 +56,11 @@ public partial class CameraRenderer
         buffer.BeginSample(SampleName);
         ExecuteCommandBuffer();
         lighting.Setup(context,cullingResults,shadowSettings);
-        postFxStack.Setup(context,camera,postFxSettings,useHDR);
+        postFxStack.Setup(context,camera,postFxSettings,useHDR,cameraSettings.finalBlendMode);
         buffer.EndSample(SampleName);
         Setup();
         
-        DrawVisibleGeometry(useDynamicBatching,useGPUInstancing);
+        DrawVisibleGeometry(useDynamicBatching,useGPUInstancing,cameraSettings.renderingLayerMask);
         DrawGizmosBeforeFX();
         if (postFxStack.IsActive)
         {
@@ -76,7 +87,7 @@ public partial class CameraRenderer
     }
     
 
-    void DrawVisibleGeometry(bool useDynamicBetching,bool useGPUInstancing)
+    void DrawVisibleGeometry(bool useDynamicBetching,bool useGPUInstancing,int renderingLayerMask)
     {
         //  设置绘制顺序 和 指定相机
         var sortingSettings = new SortingSettings(camera)
@@ -95,7 +106,7 @@ public partial class CameraRenderer
         };
         drawingSettings.SetShaderPassName(1,litShaderTagId);
         // 设置哪些类型的渲染队列可以被绘制
-        var filteringSettings =  new FilteringSettings(RenderQueueRange.opaque);
+        var filteringSettings =  new FilteringSettings(RenderQueueRange.opaque,renderingLayerMask:(uint)renderingLayerMask);
         //（1） 绘制不透明物体
         context.DrawRenderers(cullingResults,ref drawingSettings,ref filteringSettings);
         // (2)绘制天空盒

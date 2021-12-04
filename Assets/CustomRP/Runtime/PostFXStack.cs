@@ -18,7 +18,7 @@ partial class PostFXStack
     private ScriptableRenderContext context;
     private Camera camera;
     private PostFXSettings settings;
-
+    private CameraSettings.FinalBlendMode finalBlendMode;
     private int fxSourceId = Shader.PropertyToID("_PostFXSource");
     private int fxSource2Id = Shader.PropertyToID("_PostFXSource2");
     private int bloomBucibicUpsamplingId = Shader.PropertyToID("_BloomBicubicUpsampling");
@@ -43,10 +43,10 @@ partial class PostFXStack
         
         // toneMapping 的不同模式
         ToneMappingNone,
-        ToneMappingReinhard,
-        ToneMappingNeutral,
         ToneMappingACES,
-        
+        ToneMappingNeutral,
+        ToneMappingReinhard,
+        Final,
         Copy,
     }
     // 是否使用HDR
@@ -82,6 +82,7 @@ partial class PostFXStack
             // Draw(sourceId,BuiltinRenderTextureType.CameraTarget,Pass.Copy);
             // buffer.EndSample("Bloom");
             //Debug.LogError(" 000000 width="+width+"  height="+height+"  bloom.maxIterations="+bloom.maxIterations+"  bloom.intensity="+bloom.intensity);
+            Debug.LogError(" bloom 效果已经禁用 ");
             return false;
         }
         buffer.BeginSample("Bloom");
@@ -191,12 +192,29 @@ partial class PostFXStack
         buffer.SetRenderTarget(to,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
         buffer.DrawProcedural(Matrix4x4.identity, settings.Material,(int)pass,MeshTopology.Triangles,3);
     }
-    public void Setup(ScriptableRenderContext context, Camera camera, PostFXSettings settings,bool useHDR)
+
+    private int finalSrcBlendId = Shader.PropertyToID("_FinalSrcBlend");
+    private int finalDesBlendId = Shader.PropertyToID("_FinalDesBlend");
+    void DrawFinal(RenderTargetIdentifier from,Pass pass)
+    {
+        buffer.SetGlobalFloat(finalSrcBlendId,(float)finalBlendMode.source);
+        buffer.SetGlobalFloat(finalDesBlendId,(float)finalBlendMode.destination);
+        
+        buffer.SetGlobalTexture(fxSourceId,from);
+        //buffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,RenderBufferLoadAction.DontCare,RenderBufferStoreAction.Store);
+        buffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget, finalBlendMode.destination == BlendMode.Zero ? RenderBufferLoadAction.DontCare :  RenderBufferLoadAction.Load,RenderBufferStoreAction.Store);
+        // 设置视口 (在应用后处理后， 设置renderTarget 后， 设置 视口， 最后画在前面两步 确定的位置)
+        buffer.SetViewport(camera.pixelRect);
+        Debug.LogError(" pass = "+ pass.ToString()+"  ="+(int)pass);
+        buffer.DrawProcedural(Matrix4x4.identity, settings.Material,(int)pass,MeshTopology.Triangles,3);
+    }
+    public void Setup(ScriptableRenderContext context, Camera camera, PostFXSettings settings,bool useHDR, CameraSettings.FinalBlendMode finalBlendMode)
     {
         this.context = context;
         this.camera = camera;
         this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
         this.useHDR = useHDR;
+        this.finalBlendMode = finalBlendMode;
         ApplySceneViewState();
     }
     
@@ -259,7 +277,8 @@ partial class PostFXStack
         ConfigureShadowsMidtonesHighlights();
         ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
         Pass pass = Pass.ToneMappingNone + (int) mode;
-        Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
+        //Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
+        DrawFinal(sourceId,pass);
     }
 
 

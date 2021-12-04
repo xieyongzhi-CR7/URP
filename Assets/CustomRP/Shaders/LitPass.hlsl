@@ -129,6 +129,8 @@ float4 LitPassFragment(Varyings input): SV_Target
     // 计算抖动值
     surface.dither = InterleavedGradientNoise(input.positionCS.xy,0);
     
+    surface.renderingLayerMask = asuint(unity_RenderingLayer.x);
+    
  #if defined(_PREMULTIPLY_ALPHA)
     BRDF brdf = GetBRDF(surface,true);
  #else
@@ -139,7 +141,7 @@ float4 LitPassFragment(Varyings input): SV_Target
     // 加上自发光
     color += GetEmission(inputConfig);
     
-    return float4(color,surface.alpha);
+    return float4(color,GetFinalAlpha(surface.alpha));
 }
 
 #endif

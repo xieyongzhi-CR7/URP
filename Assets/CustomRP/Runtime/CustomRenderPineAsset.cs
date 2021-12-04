@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 [CreateAssetMenu(menuName = "Rendering/CreateCustomRenderPipline")]
-public class CustomRenderPineAsset : RenderPipelineAsset
+public partial class CustomRenderPineAsset : RenderPipelineAsset
 {
     [SerializeField]
     private bool useDynamicBatching = true, useGPUInstancing = true, useSRPBatcher = true;

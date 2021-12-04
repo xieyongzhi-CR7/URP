@@ -56,9 +56,17 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
     UNITY_DEFINE_INSTANCED_PROP(float4, _DetailAlbedo)    
     UNITY_DEFINE_INSTANCED_PROP(float4,_DetailSmoothness)
     UNITY_DEFINE_INSTANCED_PROP(float4,_NormalScale)
-    UNITY_DEFINE_INSTANCED_PROP(float4,_DetailNormalScale)    
+    UNITY_DEFINE_INSTANCED_PROP(float4,_DetailNormalScale)
+    UNITY_DEFINE_INSTANCED_PROP(float,_ZWrite)    
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
+
+//  不写入深度， 则使用传入的alpha作为alpha
+//  不写入深度的，半透明物体
+float GetFinalAlpha(float alpha)
+{
+    return UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_ZWrite) ? 1.0 : alpha;
+}
 
 
 float4 GetMask(InputConfig c)

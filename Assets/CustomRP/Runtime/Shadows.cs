@@ -218,7 +218,7 @@ public class Shadows
     void RenderDirectionalShadows(int index, int split, int tileSize)
     {
         ShadowedDirectionalLight light = ShadowedDirectionalLights[index];
-        var shadowSetting = new ShadowDrawingSettings(cullingResults, light.visiableLightIndex);
+        var shadowSetting = new ShadowDrawingSettings(cullingResults, light.visiableLightIndex){useRenderingLayerMaskTest = true};
         // 得到级联阴影贴图需要的参数
         int cascadeCount = settings.directional.cascadeCount;
         int tileOffset = index * cascadeCount;
