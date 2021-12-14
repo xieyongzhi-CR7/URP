@@ -11,13 +11,24 @@ public partial class CustomRenderPineAsset : RenderPipelineAsset
     private bool useDynamicBatching = true, useGPUInstancing = true, useSRPBatcher = true;
     [SerializeField]
     private ShadowSettings shadows = default;
-    [SerializeField]
-    private bool allowHDR = true;
+    // [SerializeField]
+    // private bool allowHDR = true;
 
     [SerializeField]
+    CameraBufferSettings cameraBuffer = new CameraBufferSettings
+    {
+        allowHDR = true,
+        renderScale =  1.0f,
+    };
+    
+    
+    [SerializeField]
     private PostFXSettings postFxSettings = default;
+
+    [SerializeField]
+    private Shader CameraRendererShader = default;
     protected override RenderPipeline CreatePipeline()
     {
-        return new CustomRenderPipeLine(useDynamicBatching,useGPUInstancing,useSRPBatcher,shadows,postFxSettings,allowHDR);
+        return new CustomRenderPipeLine(useDynamicBatching,useGPUInstancing,useSRPBatcher,shadows,postFxSettings,cameraBuffer,CameraRendererShader);
     }
 }

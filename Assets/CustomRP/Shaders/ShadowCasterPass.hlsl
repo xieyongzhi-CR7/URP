@@ -34,7 +34,7 @@ struct Attributes
 
 struct Varyings
 {
-    float4 positionCS : SV_POSITION;
+    float4 positionCS_SS : SV_POSITION;
     float2 baseUV : VAR_BASE_UV;    
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -50,7 +50,7 @@ Varyings ShadowCasterPassVertex(Attributes input)
     // 将索引 转换存储，在片元中还要适用
     UNITY_TRANSFER_INSTANCE_ID(input,output);
     float3 positionWS = TransformObjectToWorld(input.positionOS);
-    output.positionCS = TransformWorldToHClip(positionWS);
+    output.positionCS_SS = TransformWorldToHClip(positionWS);
     
     
     // UNITY_NEAR_CLIP_VALUE:  定义为近裁剪面的值。Direct3D 类平台使用 0.0，而 OpenGL 类平台使用 –1.0。
@@ -58,9 +58,9 @@ Varyings ShadowCasterPassVertex(Attributes input)
 if(_ShadowPancaking)
 {
 #if UNITY_REVERSED_Z
-    output.positionCS.z = min(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+    output.positionCS_SS.z = min(output.positionCS_SS.z, output.positionCS_SS.w * UNITY_NEAR_CLIP_VALUE);
 #else
-    output.positionCS.z = max(output.positionCS.z, output.positionCS.w * UNITY_NEAR_CLIP_VALUE);
+    output.positionCS_SS.z = max(output.positionCS_SS.z, output.positionCS_SS.w * UNITY_NEAR_CLIP_VALUE);
 #endif    
 }
 
@@ -81,6 +81,8 @@ if(_ShadowPancaking)
 void ShadowCasterPassFragment(Varyings input)
 {
     UNITY_SETUP_INSTANCE_ID(input);
+    InputConfig config = GetInputConfig(input.positionCS_SS,input.baseUV);
+    ClipLOD(config.fragment,unity_LODFade.x);
     float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.baseUV);
     float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseColor);
     float4 base = baseColor * baseMap;    
@@ -88,7 +90,7 @@ void ShadowCasterPassFragment(Varyings input)
     // 透明度低于阈值 舍弃
     clip(base.a - UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Cutoff));
 #elif defined(_SHADOWS_DITHER)
-    float dither = InterleavedGradientNoise(input.positionCS.xy,0);
+    float dither = InterleavedGradientNoise(input,0);
     clip(base.a - dither);
  #endif
 }

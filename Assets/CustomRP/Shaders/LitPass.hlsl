@@ -69,17 +69,16 @@ Varyings LitPassVertex(Attributes input)
 //CBUFFER_END
 
 
-void ClipLOD(float4 positionCS,float fade)
-{
-    #if defined(LOD_FADE_CROSSFADE)
+//void ClipLOD(float4 positionCS,float fade)
+//{
+//    #if defined(LOD_FADE_CROSSFADE)
         // 从y方向 垂直渐变开始。每32像素重复一次，那么就会产生交替的水平条纹
         //float dither = (positionCS.y % 32) / 32;
         
-        float dither = InterleavedGradientNoise(positionCS.xy,0);
-        clip(fade + (fade>0 ? -dither : dither));
-    #endif  
-
-}
+ //       float dither = InterleavedGradientNoise(positionCS.xy,0);
+ //       clip(fade + (fade>0 ? -dither : dither));
+ //   #endif  
+//}
 
 
 
@@ -93,9 +92,12 @@ float4 LitPassFragment(Varyings input): SV_Target
     //    return unity_LODFade.x;
     #endif
     
-    ClipLOD(input.positionCS,unity_LODFade.x);
+    InputConfig inputConfig = GetInputConfig(input.positionCS,input.baseUV);
     
-    InputConfig inputConfig = GetInputConfig(input.baseUV);
+    ClipLOD(inputConfig.fragment,unity_LODFade.x);
+    
+    
+    //return float4(inputConfig.fragment.depth.xxx / 20.0,1.0);
     #if defined(_MASK_MAP)
         inputConfig.useMask = true;
     #endif
@@ -127,7 +129,7 @@ float4 LitPassFragment(Varyings input): SV_Target
     //获取表面深度
     surface.depth = - TransformWorldToView(input.positionWS).z;
     // 计算抖动值
-    surface.dither = InterleavedGradientNoise(input.positionCS.xy,0);
+    surface.dither = InterleavedGradientNoise(inputConfig.fragment.positionSS,0);
     
     surface.renderingLayerMask = asuint(unity_RenderingLayer.x);
     

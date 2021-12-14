@@ -42,7 +42,7 @@ Varings MetaPassVertex(Attributes input)
 
 float4 MetaPassFragment(Varings input):SV_TARGET
 {
-    InputConfig inputConfig = GetInputConfig(input.baseUV,0.0);
+    InputConfig inputConfig = GetInputConfig(input.positionCS,input.baseUV,0.0);
     float4 base = GetBase(inputConfig);
     Surface surface;
     ZERO_INITIALIZE(Surface,surface);

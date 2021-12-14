@@ -18,6 +18,31 @@
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/SpaceTransforms.hlsl"
 #include "../../../Library/PackageCache/com.unity.render-pipelines.core@10.7.0/ShaderLibrary/Packing.hlsl"
 
+// 根据unity_OrthoParams。w  分量是0 或 1  来判断是否使用的是正交相机
+bool IsOrthographicCamera()
+{
+    return unity_OrthoParams.w;
+}
+
+
+// 是否使用了 反向深度缓冲区（反向深度缓冲，存储的深度的精度更高）， 需要进行还原
+float OrthographicDepthBufferToLinear(float rawDepth)
+{
+    #if UNITY_REVERSED_Z 
+        rawDepth = 1.0 - rawDepth;
+    #endif
+    return (_ProjectionParams.z - _ProjectionParams.y) * rawDepth + _ProjectionParams.y;
+}
+
+SAMPLER(sampler_linear_clamp);
+SAMPLER(sampler_point_clamp);
+SAMPLER(sampler_CameraColorTexture);
+
+#include "Fragment.hlsl"
+
+
+
+
 //float4 TransformObjectToWorld(float3 positionOS)
 //{
 //    return mul(unity_ObjectToWorld,float4(positionOS,1.0));
@@ -46,6 +71,27 @@ float3 NormalTangentToWorld(float3 normalTS,float3 normalWS,float4 tangentWS)
     return TransformTangentToWorld(normalTS,tangentToWorld);
 }
 
+//void ClipLOD(Fragment fragment, float fade)
+//{
+   // #if defined (LOD_FADE_CROSSFADE)
+   //     float dither = InterleavedGradientNoise(fragment.positionSS,0);
+    //    clip(fade + (fade < 0.0 ? dither : -dither));
+   // #endif
+//}
+
+
+void ClipLOD(Fragment fragment,float fade)
+{
+    #if defined(LOD_FADE_CROSSFADE)
+        // 从y方向 垂直渐变开始。每32像素重复一次，那么就会产生交替的水平条纹
+        //float dither = (positionCS.y % 32) / 32;
+        
+        float dither = InterleavedGradientNoise(fragment.positionSS,0);
+        clip(fade + (fade>0 ? -dither : dither));
+    #endif  
+
+}
+
 
 
 float Square1(float v)
@@ -58,5 +104,4 @@ float DistanceSquared(float3 pA, float3 pB)
 {
     return dot(pA-pB,pA - pB);
 }
-
 #endif

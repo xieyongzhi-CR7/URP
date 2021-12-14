@@ -149,6 +149,17 @@ Shader "Hidden/CustomRP/PostFXStack"
             #pragma fragment CopyPassFragment            
             ENDHLSL
         }
+        
+         Pass
+        {
+            Name "Final Rescale "
+            Blend [_FinalSrcBlend] [_FinalDesBlend]        
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DefaultPassVertex
+            #pragma fragment CopyPassFragment            
+            ENDHLSL
+        }
        
         
          

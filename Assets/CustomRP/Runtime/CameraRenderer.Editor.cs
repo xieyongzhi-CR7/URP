@@ -51,6 +51,8 @@ public partial class CameraRenderer
         {
             // 如果切换到Scene视图，调用此方法完成绘制
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+            // scene 窗口下  禁用 缩放
+            useScaledRendering = false;
         }
     }
 
@@ -59,6 +61,11 @@ public partial class CameraRenderer
     {
         if (Handles.ShouldRenderGizmos())
         {
+            if (useIntermediateBuffer)
+            {
+                Draw(depthAttachmentId,BuiltinRenderTextureType.CameraTarget,true);
+                ExecuteCommandBuffer();
+            }
             context.DrawGizmos(camera,GizmoSubset.PreImageEffects);
         }
     }

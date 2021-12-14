@@ -30,6 +30,7 @@ partial class PostFXStack
     public bool IsActive => settings != null;
     private const int maxBloomPyramidLevels = 16;
     private int bloomPyramidId;
+    private Vector2Int bufferSize;
     enum Pass
     {
         BloomVertical,
@@ -48,6 +49,7 @@ partial class PostFXStack
         ToneMappingReinhard,
         Final,
         Copy,
+        FinalRescale,
     }
     // 是否使用HDR
     private bool useHDR;
@@ -74,8 +76,18 @@ partial class PostFXStack
 
     bool DoBloom(int sourceId)
     {
-        PostFXSettings.BloomSettings bloom = settings.Bloom;
-        int width = camera.pixelWidth / 2, height = camera.pixelHeight / 2;
+        BloomSettings bloom = settings.Bloom;
+        int width , height ;
+        if (bloom.ignoreRenderScale)
+        {
+            width = camera.pixelWidth / 2;
+            height = camera.pixelHeight / 2;
+        }
+        else
+        {
+            width = bufferSize.x / 2;
+            height = bufferSize.y / 2;
+        }
         if (bloom.maxIterations == 0 || bloom.intensity <= 0 || height < bloom.downscaleLimit * 2 ||
             width < bloom.downscaleLimit * 2)
         {
@@ -172,7 +184,7 @@ partial class PostFXStack
         buffer.SetGlobalFloat(bloomIntensityId,finalIntensity);
         buffer.SetGlobalTexture(fxSource2Id, sourceId);
         // 由于应用toneMapping,把bloom的结果先应用toneMapping 后再画到相机显示
-        buffer.GetTemporaryRT(bloomResultId,camera.pixelWidth,camera.pixelHeight,0,FilterMode.Bilinear,format);
+        buffer.GetTemporaryRT(bloomResultId,bufferSize.x,bufferSize.y,0,FilterMode.Bilinear,format);
         Draw(formId, bloomResultId, finalPass);
         buffer.ReleaseTemporaryRT(formId);
         buffer.EndSample("Bloom");
@@ -205,13 +217,14 @@ partial class PostFXStack
         buffer.SetRenderTarget(BuiltinRenderTextureType.CameraTarget, finalBlendMode.destination == BlendMode.Zero ? RenderBufferLoadAction.DontCare :  RenderBufferLoadAction.Load,RenderBufferStoreAction.Store);
         // 设置视口 (在应用后处理后， 设置renderTarget 后， 设置 视口， 最后画在前面两步 确定的位置)
         buffer.SetViewport(camera.pixelRect);
-        Debug.LogError(" pass = "+ pass.ToString()+"  ="+(int)pass);
+        //Debug.LogError(" pass = "+ pass.ToString()+"  ="+(int)pass);
         buffer.DrawProcedural(Matrix4x4.identity, settings.Material,(int)pass,MeshTopology.Triangles,3);
     }
-    public void Setup(ScriptableRenderContext context, Camera camera, PostFXSettings settings,bool useHDR, CameraSettings.FinalBlendMode finalBlendMode)
+    public void Setup(ScriptableRenderContext context, Camera camera,Vector2Int bufferSize, PostFXSettings settings,bool useHDR, CameraSettings.FinalBlendMode finalBlendMode)
     {
         this.context = context;
         this.camera = camera;
+        this.bufferSize = bufferSize;
         this.settings = camera.cameraType <= CameraType.SceneView ? settings : null;
         this.useHDR = useHDR;
         this.finalBlendMode = finalBlendMode;
@@ -223,7 +236,7 @@ partial class PostFXStack
         //Draw(sourceId,BuiltinRenderTextureType.CameraTarget,Pass.Copy);
         if (DoBloom(sourceId))
         {
-            Debug.LogError("执行bloom   toneMapping");
+            //Debug.LogError("执行bloom   toneMapping");
             // 有bloom  则 将bloom结果应用 toneMapping
             DoColorGradingAndMapping(bloomResultId);
             buffer.ReleaseTemporaryRT(bloomResultId);
@@ -267,7 +280,7 @@ partial class PostFXStack
         buffer.SetGlobalColor(colorFilterId,colorAdjustments.colorFilter.linear);
     }
 
-
+    private static int finalResultId = Shader.PropertyToID("_FinalResultId");
     void DoColorGradingAndMapping(int sourceId)
     {
         ConfigureColorAdjustments();
@@ -278,7 +291,20 @@ partial class PostFXStack
         ToneMappingSettings.Mode mode = settings.ToneMapping.mode;
         Pass pass = Pass.ToneMappingNone + (int) mode;
         //Draw(sourceId,BuiltinRenderTextureType.CameraTarget,pass);
-        DrawFinal(sourceId,pass);
+        if (bufferSize.x == camera.pixelWidth)
+        {
+            DrawFinal(sourceId,pass);    
+        }
+        else
+        {
+            buffer.SetGlobalFloat(finalSrcBlendId,1f);
+            buffer.SetGlobalFloat(finalDesBlendId,0f);
+            buffer.GetTemporaryRT(finalResultId,bufferSize.x,bufferSize.y,0,FilterMode.Bilinear,RenderTextureFormat.Default);
+            Draw(sourceId,finalResultId,pass);
+            DrawFinal(finalResultId,Pass.FinalRescale);
+            buffer.ReleaseTemporaryRT(finalResultId);
+        }
+        
     }
 
 

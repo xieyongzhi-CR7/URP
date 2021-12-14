@@ -18,15 +18,24 @@ public partial class CustomRenderPipeLine
 {
     partial void InitializeForEditor();
 
+    partial void DisposeForEditor();
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        DisposeForEditor();
+        renderer.Dipose();
+    }
+
 #if UNITY_EDITOR
     partial void InitializeForEditor()
     {
        Lightmapping.SetDelegate(lightsDelegate);
     }
 
-    protected override void Dispose(bool disposing)
+    partial void DisposeForEditor()
     {
-        base.Dispose(disposing);
+        //base.Dispose(disposing);
         Lightmapping.ResetDelegate();
     }
 

@@ -636,7 +636,7 @@ Light:
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_RenderingLayerMask: 2147483647
+  m_RenderingLayerMask: 2147483645
   m_Lightmapping: 4
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
@@ -759,6 +759,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
+    renderingLayerMask: -1
+    maskLights: 0
     overridePostFX: 0
     postFxSettings: {fileID: 0}
     finalBlendMode:
@@ -1444,6 +1446,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
+    renderingLayerMask: 0
+    maskLights: 0
     overridePostFX: 0
     postFxSettings: {fileID: 0}
     finalBlendMode:

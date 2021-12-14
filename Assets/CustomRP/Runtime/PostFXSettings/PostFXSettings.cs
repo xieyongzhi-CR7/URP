@@ -14,6 +14,8 @@ public class PostFXSettings : ScriptableObject
     [System.Serializable]
     public struct BloomSettings
     {
+        // 是否忽略renderScale的设置： 因为bloom 本身就存在缩放，所以基于相机原始比例的缩放是可以的（ 不基于相机，基于缩放比例的缩放，当动态调整时 会出现光射）
+        public bool ignoreRenderScale;
         [Range(0f,16f)]
         public int maxIterations;
         [FormerlySerializedAs("downscaleLimit")] [Min(1f)]
